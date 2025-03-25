@@ -72,3 +72,6 @@ Plugins/**/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+/UE_PlaneGame/Intermediate
+/UE_PlaneGame/Saved
+/UE_PlaneGame/Binaries
