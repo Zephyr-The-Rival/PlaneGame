@@ -3,7 +3,7 @@
 
 #include "UE_PlaneGame/Public/PlayerCharacter/PlaneGameMode.h"
 
-#include "PlanePlayerController.h"
+#include "UE_PlaneGame/Public/PlayerCharacter/PlanePlayerController.h"
 #include "UE_PlaneGame/Public/PlayerCharacter/PlanePlayerCharacter.h"
 
 APlaneGameMode::APlaneGameMode()
