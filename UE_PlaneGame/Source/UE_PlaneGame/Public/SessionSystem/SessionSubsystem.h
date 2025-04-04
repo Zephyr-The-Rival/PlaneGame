@@ -64,8 +64,12 @@ protected:
 
 public:
 	UFUNCTION(BlueprintCallable)
-	void CreateServer(FString ServerName, FString HostName, bool bIsPrivate);
+	void CreateServer(FString ServerName, FString HostName, bool bIsPrivate, FString LevelPath);
 
+private:
+	FString LevelPathToTravelTo;
+	
+public:
 	UFUNCTION(BlueprintCallable)
 	void FindServers();
 

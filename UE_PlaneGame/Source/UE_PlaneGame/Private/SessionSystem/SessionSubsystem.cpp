@@ -42,7 +42,9 @@ void USessionSubsystem::OnCreateSessionComplete(FName SessionName, bool Succeede
 	if (!Succeeded)
 		return;
 
-	GetWorld()->ServerTravel("/Game/_DungeonCompanyContent/Maps/MainDungeonBaked?listen");
+	//"/Game/_DungeonCompanyContent/Maps/MainDungeonBaked?listen"
+	this->LevelPathToTravelTo+="?listen";
+	GetWorld()->ServerTravel(this->LevelPathToTravelTo);
 }
 
 void USessionSubsystem::OnFindSessionComplete(bool Succeeded)
@@ -116,8 +118,9 @@ void USessionSubsystem::OnSessionUserInviteAccepted(const bool bWasSuccessful, c
 }
 
 
-void USessionSubsystem::CreateServer(FString ServerName, FString HostName, bool bIsPrivate)
+void USessionSubsystem::CreateServer(FString ServerName, FString HostName, bool bIsPrivate, FString LevelPath)
 {
+	this->LevelPathToTravelTo=LevelPath;
 	UE_LOG(LogTemp, Warning, TEXT("CreatingServer..."));
 	FOnlineSessionSettings sessionSettings;
 
