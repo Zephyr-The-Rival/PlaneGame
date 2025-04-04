@@ -11,7 +11,7 @@
 
 USessionSubsystem::USessionSubsystem()
 {
-	this->LoadingScreen = ConstructorHelpers::FClassFinder<UUserWidget>(TEXT("/Game/_DungeonCompanyContent/Code/UI/JoiningScreen")).Class;
+	//this->LoadingScreen = ConstructorHelpers::FClassFinder<UUserWidget>(TEXT("/Game/_DungeonCompanyContent/Code/UI/JoiningScreen")).Class;
 }
 
 void USessionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -82,6 +82,7 @@ void USessionSubsystem::OnFindSessionComplete(bool Succeeded)
 		infos.Add(info);
 	}
 
+	SearchComplete.Broadcast(infos);
 	SearchComplete.Broadcast(infos);
 }
 
