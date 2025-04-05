@@ -3,6 +3,7 @@
 
 #include "SessionSystem/SessionSubsystem.h"
 
+#include "Debug.h"
 #include "OnlineSubsystem.h"
 #include "OnlineSessionSettings.h"
 #include "Blueprint/UserWidget.h"
@@ -165,14 +166,15 @@ void USessionSubsystem::FindServers()
 
 void USessionSubsystem::JoinServer(int32 Index)
 {
+	
 	FOnlineSessionSearchResult result = SessionSearch->SearchResults[Index];
-
+	Debug::Print("Joining Server...");
 	if (!result.IsValid())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Joining session with index %d failed"), Index);
+		Debug::Print("Joining session failed. Session is not Valid Session index: "+Index);
 		return;
 	}
-
+	Debug::Print("Joining session at index: "+ Index);
 	UE_LOG(LogTemp, Warning, TEXT("Joining session at index %d ..."), Index);
 	SessionInterface->JoinSession(0, NAME_GameSession, result);
 }
