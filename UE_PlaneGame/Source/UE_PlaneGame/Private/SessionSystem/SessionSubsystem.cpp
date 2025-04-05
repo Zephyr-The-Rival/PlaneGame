@@ -84,12 +84,12 @@ void USessionSubsystem::OnFindSessionComplete(bool Succeeded)
 	}
 
 	SearchComplete.Broadcast(infos);
-	SearchComplete.Broadcast(infos);
+	//SearchComplete.Broadcast(infos);
 }
 
 void USessionSubsystem::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
 {
-	UE_LOG(LogTemp, Warning, TEXT("OnJoinSessionComplete"));
+	Debug::Print("Join Session Complete");
 
 	APlayerController* Controller = GetWorld()->GetFirstPlayerController();
 
@@ -97,14 +97,30 @@ void USessionSubsystem::OnJoinSessionComplete(FName SessionName, EOnJoinSessionC
 		return;
 
 	FString JoinAdress = "";
-	SessionInterface->GetResolvedConnectString(SessionName, JoinAdress);
+	
+	
+	if(SessionInterface->GetResolvedConnectString(SessionName, JoinAdress))
+	{
+		Debug::Print("GetResolved connect String sucsess");
+	}
+	else
+	{
+		Debug::Print("GetResolved connect String FAIL");
+	}
+
+	Debug::Print("JoinAdress: "+JoinAdress);
 
 	JoinAdress = JoinAdress.Replace(*FString(":0"), *FString(":7777"), ESearchCase::IgnoreCase);
 
 	if (JoinAdress == "")
+	{
+		Debug::Print("Join Adress is empty");
 		return;
+	}
+		
 
-	UE_LOG(LogTemp, Warning, TEXT("Traveling to: %s"), *JoinAdress);
+	Debug::Print("Traveling to: %s"+JoinAdress);
+	//UE_LOG(LogTemp, Warning, TEXT("Traveling to: %s"), *JoinAdress);
 	Controller->ClientTravel(JoinAdress, ETravelType::TRAVEL_Absolute);
 }
 
