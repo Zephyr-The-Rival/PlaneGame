@@ -75,3 +75,5 @@ DerivedDataCache/*
 /UE_PlaneGame/Intermediate
 /UE_PlaneGame/Saved
 /UE_PlaneGame/Binaries
+/UE_PlaneGame/Plugins/AdvancedSessions/Intermediate
+/UE_PlaneGame/Plugins/AdvancedSteamSessions/Intermediate
