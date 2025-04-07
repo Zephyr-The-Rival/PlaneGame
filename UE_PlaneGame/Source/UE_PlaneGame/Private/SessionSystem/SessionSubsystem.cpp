@@ -22,12 +22,20 @@ void USessionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	IOnlineSubsystem* SubSystem = IOnlineSubsystem::Get();
 
 	if (!SubSystem)
+	{
+		Debug::Print("Sub System is not valid");
 		return;
+	}
+		
 
 	SessionInterface = SubSystem->GetSessionInterface();
 
 	if (!SessionInterface.IsValid())
+	{
+		Debug::Print("SessionInterface Is not valid");
 		return;
+	}
+		
 
 	SessionInterface->OnCreateSessionCompleteDelegates.AddUObject(this, &USessionSubsystem::OnCreateSessionComplete);
 	SessionInterface->OnFindSessionsCompleteDelegates.AddUObject(this, &USessionSubsystem::OnFindSessionComplete);
@@ -36,9 +44,45 @@ void USessionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		this, &USessionSubsystem::OnSessionUserInviteAccepted);
 }
 
+void USessionSubsystem::OnSessionUserInviteAccepted(const bool bWasSuccessful, const int32 ControllerId,
+                                                    FUniqueNetIdPtr UserId,
+                                                    const FOnlineSessionSearchResult& InviteResult)
+{
+	
+	if(IsValid(LoadingScreen))
+		CreateWidget<UUserWidget>(GetWorld(),LoadingScreen)->AddToViewport(1);
+	
+	SessionInterface->JoinSession(0, NAME_GameSession, InviteResult);
+}
+
+
+void USessionSubsystem::CreateServer(FString ServerName, FString HostName, bool bIsPrivate, FString LevelPath)
+{
+	this->LevelPathToTravelTo=LevelPath;
+
+	Debug::Print("Session Interface Name: "+IOnlineSubsystem::Get()->GetSubsystemName().ToString());
+	Debug::Print("CreatingServer...");
+	FOnlineSessionSettings sessionSettings;
+
+	sessionSettings.bAllowJoinInProgress = true;
+	sessionSettings.bIsDedicated = false;
+	sessionSettings.bIsLANMatch = false;
+	sessionSettings.bShouldAdvertise = true;
+	sessionSettings.bAllowInvites=true;
+	sessionSettings.bAllowJoinViaPresence=true;
+	sessionSettings.bUsesPresence = true;
+	sessionSettings.NumPublicConnections = 4;
+	
+	sessionSettings.bUseLobbiesIfAvailable = true;
+	sessionSettings.Set(FName("SERVER_NAME_KEY"), ServerName, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+	sessionSettings.Set(FName("SERVER_HOSTNAME_KEY"), HostName, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+	
+	bool bsuccessful=SessionInterface->CreateSession(0, NAME_GameSession, sessionSettings);
+}
+
 void USessionSubsystem::OnCreateSessionComplete(FName SessionName, bool Succeeded)
 {
-	UE_LOG(LogTemp, Warning, TEXT("OnCreateSessionComplete Succeeded: %d"), Succeeded);
+	Debug::Print("OnCreateSessionComplete Succeeded: "+ LexToString(Succeeded));
 
 	if (!Succeeded)
 		return;
@@ -46,6 +90,18 @@ void USessionSubsystem::OnCreateSessionComplete(FName SessionName, bool Succeede
 	//"/Game/_DungeonCompanyContent/Maps/MainDungeonBaked?listen"
 	this->LevelPathToTravelTo+="?listen";
 	GetWorld()->ServerTravel(this->LevelPathToTravelTo);
+}
+
+void USessionSubsystem::FindServers()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Searching for Sessions..."));
+	SessionSearch = MakeShareable(new FOnlineSessionSearch());
+
+	SessionSearch->bIsLanQuery = false;
+	SessionSearch->MaxSearchResults = 100;//big number because of other steam users with the same appId
+	SessionSearch->QuerySettings.Set(SEARCH_LOBBIES, true, EOnlineComparisonOp::Equals);
+
+	SessionInterface->FindSessions(0, SessionSearch.ToSharedRef());
 }
 
 void USessionSubsystem::OnFindSessionComplete(bool Succeeded)
@@ -87,17 +143,61 @@ void USessionSubsystem::OnFindSessionComplete(bool Succeeded)
 	//SearchComplete.Broadcast(infos);
 }
 
+void USessionSubsystem::JoinServer(int32 Index)
+{
+	FOnlineSessionSearchResult result = SessionSearch->SearchResults[Index];
+	if (!result.IsValid())
+	{
+		Debug::Print("Joining session failed. Session is not Valid. Session index: "+Index);
+		return;
+	}
+	Debug::Print("Joining session at index: "+  FString::FromInt(Index)+ "...");
+	SessionInterface->JoinSession(0, NAME_GameSession, result);
+}
+
 void USessionSubsystem::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
 {
-	Debug::Print("Join Session Complete");
 
+	FString stringResult="";
+	switch (Result)
+	{
+	case EOnJoinSessionCompleteResult::Success:
+		stringResult = "Success";
+		break;
+	case EOnJoinSessionCompleteResult::SessionIsFull:
+		stringResult = "SessionIsFull";
+		break;
+	case EOnJoinSessionCompleteResult::SessionDoesNotExist:
+		stringResult = "SessionDoesNotExist";
+		break;
+	case EOnJoinSessionCompleteResult::CouldNotRetrieveAddress:
+		stringResult = "CouldNotRetrieveAddress";
+		break;
+	case EOnJoinSessionCompleteResult::AlreadyInSession:
+		stringResult = "AlreadyInSession";
+		break;
+	case EOnJoinSessionCompleteResult::UnknownError:
+		stringResult = "UnknownError";
+		break;
+	default:
+		stringResult = "InvalidResult";
+		break;
+	}
+
+	Debug::Print("Join Session Result: "+ stringResult,10);
+	if(Result!=EOnJoinSessionCompleteResult::Success)
+	{
+		Debug::Print("JoinSession failed.");
+		return;
+	}
+		
+	
 	APlayerController* Controller = GetWorld()->GetFirstPlayerController();
 
 	if (!Controller)
 		return;
 
 	FString JoinAdress = "";
-	
 	
 	if(SessionInterface->GetResolvedConnectString(SessionName, JoinAdress))
 	{
@@ -113,86 +213,11 @@ void USessionSubsystem::OnJoinSessionComplete(FName SessionName, EOnJoinSessionC
 	JoinAdress = JoinAdress.Replace(*FString(":0"), *FString(":7777"), ESearchCase::IgnoreCase);
 
 	if (JoinAdress == "")
-	{
-		Debug::Print("Join Adress is empty");
 		return;
-	}
-		
-
+	
 	Debug::Print("Traveling to: %s"+JoinAdress);
 	//UE_LOG(LogTemp, Warning, TEXT("Traveling to: %s"), *JoinAdress);
 	Controller->ClientTravel(JoinAdress, ETravelType::TRAVEL_Absolute);
-}
-
-void USessionSubsystem::OnSessionUserInviteAccepted(const bool bWasSuccessful, const int32 ControllerId,
-                                                    FUniqueNetIdPtr UserId,
-                                                    const FOnlineSessionSearchResult& InviteResult)
-{
-	
-	if(IsValid(LoadingScreen))
-		CreateWidget<UUserWidget>(GetWorld(),LoadingScreen)->AddToViewport(1);
-	
-	SessionInterface->JoinSession(0, NAME_GameSession, InviteResult);
-}
-
-
-void USessionSubsystem::CreateServer(FString ServerName, FString HostName, bool bIsPrivate, FString LevelPath)
-{
-	this->LevelPathToTravelTo=LevelPath;
-	UE_LOG(LogTemp, Warning, TEXT("CreatingServer..."));
-	FOnlineSessionSettings sessionSettings;
-
-	sessionSettings.bAllowJoinInProgress = true;
-	sessionSettings.bIsDedicated = false;
-	sessionSettings.bIsLANMatch = false;
-	sessionSettings.bShouldAdvertise = true;
-	sessionSettings.bAllowInvites=true;
-	sessionSettings.bAllowJoinViaPresence=true;
-	sessionSettings.bUsesPresence = true;
-
-	if(bIsPrivate)
-	{
-		sessionSettings.NumPublicConnections = 0;
-		sessionSettings.NumPrivateConnections =4;
-	}
-	else
-	{
-		sessionSettings.NumPublicConnections = 4;
-		sessionSettings.NumPrivateConnections =0;
-	}
-	
-	sessionSettings.bUseLobbiesIfAvailable = true;
-	sessionSettings.Set(FName("SERVER_NAME_KEY"), ServerName, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
-	sessionSettings.Set(FName("SERVER_HOSTNAME_KEY"), HostName, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
-
-	SessionInterface->CreateSession(0, NAME_GameSession, sessionSettings);
-}
-
-void USessionSubsystem::FindServers()
-{
-	UE_LOG(LogTemp, Warning, TEXT("Searching for Sessions..."));
-	SessionSearch = MakeShareable(new FOnlineSessionSearch());
-
-	SessionSearch->bIsLanQuery = false;
-	SessionSearch->MaxSearchResults = 10000;//big number because of other steam users with the same appId
-	SessionSearch->QuerySettings.Set(SEARCH_LOBBIES, true, EOnlineComparisonOp::Equals);
-
-	SessionInterface->FindSessions(0, SessionSearch.ToSharedRef());
-}
-
-void USessionSubsystem::JoinServer(int32 Index)
-{
-	
-	FOnlineSessionSearchResult result = SessionSearch->SearchResults[Index];
-	Debug::Print("Joining Server...");
-	if (!result.IsValid())
-	{
-		Debug::Print("Joining session failed. Session is not Valid Session index: "+Index);
-		return;
-	}
-	Debug::Print("Joining session at index: "+ Index);
-	UE_LOG(LogTemp, Warning, TEXT("Joining session at index %d ..."), Index);
-	SessionInterface->JoinSession(0, NAME_GameSession, result);
 }
 
 void USessionSubsystem::DestroyCurrentSession()
