@@ -7,6 +7,7 @@
 #include "PlanePlayerCharacter.generated.h"
 
 
+class UTextRenderComponent;
 struct FInputActionValue;
 class APlanePlayerController;
 class UCameraComponent;
@@ -74,6 +75,7 @@ protected:
 private:
 	
 	void Move(const FInputActionValue& Value);
+	void Look(const FInputActionValue& Value);
 	
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
