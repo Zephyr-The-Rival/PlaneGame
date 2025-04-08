@@ -9,6 +9,7 @@
 #include "EnhancedInputComponent.h"
 #include "InputMappingContext.h"
 #include "InputActionValue.h"
+#include "Components/TextRenderComponent.h"
 
 
 // Sets default values
@@ -16,13 +17,15 @@ APlanePlayerCharacter::APlanePlayerCharacter()
 {
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-	
-	FirstPersonMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMeshComponent"));
-	FirstPersonMesh->SetupAttachment(RootComponent);
 
 	FirstPersonCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	FirstPersonCamera->SetupAttachment(RootComponent);
 	FirstPersonCamera->bUsePawnControlRotation = true;
+
+	FirstPersonMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMeshComponent"));
+	FirstPersonMesh->SetupAttachment(FirstPersonCamera);
+	
+	
 }
 
 // Called when the game starts or when spawned
@@ -32,6 +35,10 @@ void APlanePlayerCharacter::BeginPlay()
 	this->MyPlayerController= Cast<APlanePlayerController>(GetController());
 
 	this->AddMappingContext(this->BasicCharacterInputMappingContext);
+	if(IsLocallyControlled())
+		GetMesh()->SetVisibility(false);
+	else
+		FirstPersonMesh->SetVisibility(false);
 }
 
 // Called every frame
@@ -50,6 +57,7 @@ void APlanePlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 		return;
 
 	EIC->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::Move);
+	EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::Look);
 }
 
 void APlanePlayerCharacter::AddMappingContext(UInputMappingContext* MappingContextToAdd)
@@ -76,5 +84,13 @@ void APlanePlayerCharacter::Move(const FInputActionValue& Value)
 	
 	FVector MovementInputVector = GetActorForwardVector() * MoveVector.X + GetActorRightVector() * MoveVector.Y; 
 	AddMovementInput(MovementInputVector);
+}
+
+void APlanePlayerCharacter::Look(const FInputActionValue& Value)
+{
+	FVector2D DeltaLook= Value.Get<FVector2D>();
+
+	AddControllerPitchInput(DeltaLook.Y*-1);
+	AddControllerYawInput(DeltaLook.X);
 }
 
