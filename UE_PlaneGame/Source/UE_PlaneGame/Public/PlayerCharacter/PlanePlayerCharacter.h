@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "UtilityActors/Turbulence/TurbulenceAffected.h"
 #include "PlanePlayerCharacter.generated.h"
 
 
@@ -15,7 +16,7 @@ class UInputMappingContext;
 class UInputAction;
 
 UCLASS()
-class UE_PLANEGAME_API APlanePlayerCharacter : public ACharacter
+class UE_PLANEGAME_API APlanePlayerCharacter : public ACharacter, public ITurbulenceAffected
 {
 	GENERATED_BODY()
 
