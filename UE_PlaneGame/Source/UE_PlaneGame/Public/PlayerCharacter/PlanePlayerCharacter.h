@@ -41,12 +41,12 @@ protected:
 	APlanePlayerController* MyPlayerController;
 	
 //Components
-
-	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<USkeletalMeshComponent> FirstPersonMesh;
 	
 	UPROPERTY(EditAnywhere, Category = "Camera", BlueprintReadOnly)
 	UCameraComponent* FirstPersonCamera;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UChildActorComponent* PlayerHand;
 	
 	//Basic Input
 protected:
@@ -70,6 +70,12 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Input | Action")
 	UInputAction* InteractAction;
 
+	UPROPERTY(EditAnywhere, Category = "Input | Action")
+	UInputAction* HandMovementAction;
+
+	UPROPERTY(EditAnywhere, Category = "Input | Action")
+	UInputAction* HandTurnAction;
+
 	//process input
 
 	//Moving
@@ -77,6 +83,7 @@ private:
 	
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
+	void MoveHand(const FInputActionValue& Value);
 	
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)

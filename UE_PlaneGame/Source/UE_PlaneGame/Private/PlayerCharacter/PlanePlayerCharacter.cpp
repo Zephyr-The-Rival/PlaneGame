@@ -21,11 +21,9 @@ APlanePlayerCharacter::APlanePlayerCharacter()
 	FirstPersonCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	FirstPersonCamera->SetupAttachment(RootComponent);
 	FirstPersonCamera->bUsePawnControlRotation = true;
-
-	FirstPersonMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMeshComponent"));
-	FirstPersonMesh->SetupAttachment(FirstPersonCamera);
 	
-	
+	PlayerHand= CreateDefaultSubobject<UChildActorComponent>(TEXT("ChildActor"));
+	PlayerHand->SetupAttachment(FirstPersonCamera);
 }
 
 // Called when the game starts or when spawned
@@ -35,10 +33,6 @@ void APlanePlayerCharacter::BeginPlay()
 	this->MyPlayerController= Cast<APlanePlayerController>(GetController());
 
 	this->AddMappingContext(this->BasicCharacterInputMappingContext);
-	if(IsLocallyControlled())
-		GetMesh()->SetVisibility(false);
-	else
-		FirstPersonMesh->SetVisibility(false);
 }
 
 // Called every frame
@@ -59,6 +53,7 @@ void APlanePlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 	EIC->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::Move);
 	EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::Look);
 	EIC->BindAction(JumpAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::Jump);
+	EIC->BindAction(HandMovementAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::MoveHand);
 }
 
 void APlanePlayerCharacter::AddMappingContext(UInputMappingContext* MappingContextToAdd)

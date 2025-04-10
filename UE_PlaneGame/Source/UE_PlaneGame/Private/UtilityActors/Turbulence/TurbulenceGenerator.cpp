@@ -61,6 +61,10 @@ void ATurbulenceGenerator::SetTurbulenceStrength(const float NewStrength)
 
 void ATurbulenceGenerator::ApplyTurbulence(float DeltaTime)
 {
+	//apply turbulence gets executed on all clients but the server still has authority over the positions of items
+	//however, before the netupdate comes, the items are moved on the client by the same noise value.
+	//the noise is predetermined and the driving value is replicated.
+	
 	TArray<AActor*> AllActors;
 	UGameplayStatics::GetAllActorsWithInterface(GetWorld(), UTurbulenceAffected::StaticClass(), AllActors);
 
