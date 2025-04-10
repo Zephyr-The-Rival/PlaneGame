@@ -58,6 +58,7 @@ void APlanePlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 
 	EIC->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::Move);
 	EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::Look);
+	EIC->BindAction(JumpAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::Jump);
 }
 
 void APlanePlayerCharacter::AddMappingContext(UInputMappingContext* MappingContextToAdd)
@@ -93,4 +94,6 @@ void APlanePlayerCharacter::Look(const FInputActionValue& Value)
 	AddControllerPitchInput(DeltaLook.Y*-1);
 	AddControllerYawInput(DeltaLook.X);
 }
+
+
 
