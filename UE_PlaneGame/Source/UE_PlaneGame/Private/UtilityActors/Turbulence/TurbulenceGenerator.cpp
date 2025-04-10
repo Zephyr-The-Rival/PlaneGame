@@ -72,7 +72,7 @@ void ATurbulenceGenerator::ApplyTurbulence(float DeltaTime)
 			
 			if (APlanePlayerCharacter* PlayerCharacter=  Cast<APlanePlayerCharacter>(Actor))
 			{
-				PlayerCharacter->AddActorWorldOffset(TurbulenceValue*DeltaTime);
+				//PlayerCharacter->AddActorWorldOffset(TurbulenceValue*DeltaTime);
 				continue;
 			}
 
