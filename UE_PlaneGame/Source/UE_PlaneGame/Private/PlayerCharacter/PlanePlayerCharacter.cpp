@@ -34,6 +34,7 @@ void APlanePlayerCharacter::BeginPlay()
 	this->MyPlayerController= Cast<APlanePlayerController>(GetController());
 
 	this->AddMappingContext(this->BasicCharacterInputMappingContext);
+	this->AddMappingContext(MoveCameraMappingContext);
 }
 
 // Called every frame
@@ -52,10 +53,12 @@ void APlanePlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 		return;
 
 	EIC->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::Move);
-	//EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::Look);
+	EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::Look);
 	EIC->BindAction(JumpAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::Jump);
 	EIC->BindAction(HandMovementAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::MoveHand);
 	EIC->BindAction(HandTurnAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::TurnHand);
+	EIC->BindAction(ToggleHandMovementAction, ETriggerEvent::Started, this, &APlanePlayerCharacter::ActivateHandMovement);
+	EIC->BindAction(ToggleHandMovementAction, ETriggerEvent::Completed, this, &APlanePlayerCharacter::DeactivateHandMovement);
 }
 
 void APlanePlayerCharacter::AddMappingContext(UInputMappingContext* MappingContextToAdd)
@@ -84,13 +87,13 @@ void APlanePlayerCharacter::Move(const FInputActionValue& Value)
 	AddMovementInput(MovementInputVector);
 }
 
-// void APlanePlayerCharacter::Look(const FInputActionValue& Value)
-// {
-// 	FVector2D DeltaLook= Value.Get<FVector2D>();
-//
-// 	AddControllerPitchInput(DeltaLook.Y*-1);
-// 	AddControllerYawInput(DeltaLook.X);
-// }
+void APlanePlayerCharacter::Look(const FInputActionValue& Value)
+{
+	FVector2D DeltaLook= Value.Get<FVector2D>();
+
+	AddControllerPitchInput(DeltaLook.Y*-1);
+	AddControllerYawInput(DeltaLook.X);
+}
 
 void APlanePlayerCharacter::MoveHand(const FInputActionValue& Value)
 {
@@ -123,6 +126,20 @@ void APlanePlayerCharacter::TurnHand(const FInputActionValue& Value)
 	FRotator DeltaRotaion= FRotator(0,0,FValue*HandTurnSpeed*GetWorld()->DeltaTimeSeconds);
 	PlayerHand->AddLocalRotation(DeltaRotaion);
 }
+
+void APlanePlayerCharacter::ActivateHandMovement()
+{
+	this->AddMappingContext(MoveHandMappingContext);
+	this->RemoveMappingContext(MoveCameraMappingContext);
+}
+
+void APlanePlayerCharacter::DeactivateHandMovement()
+{
+	this->RemoveMappingContext(MoveHandMappingContext);
+	this->AddMappingContext(MoveCameraMappingContext);
+}
+
+
 
 
 

@@ -52,6 +52,12 @@ protected:
 protected:
 	UPROPERTY(EditAnywhere, Category = "Input | Mapping")
 	UInputMappingContext* BasicCharacterInputMappingContext;
+	
+	UPROPERTY(EditAnywhere, Category = "Input | Mapping")
+	UInputMappingContext* MoveHandMappingContext;
+
+	UPROPERTY(EditAnywhere, Category = "Input | Mapping")
+	UInputMappingContext* MoveCameraMappingContext;
 
 private:
 	void AddMappingContext(UInputMappingContext* MappingContextToAdd);
@@ -61,8 +67,8 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Input|Action|Move")
 	UInputAction* MoveAction;
 
-	// UPROPERTY(EditAnywhere, Category = "Input|Action")
-	// UInputAction* LookAction;
+	UPROPERTY(EditAnywhere, Category = "Input|Action")
+	UInputAction* LookAction;
 
 	UPROPERTY(EditAnywhere, Category = "Input|Action|Move")
 	UInputAction* JumpAction;
@@ -71,7 +77,7 @@ protected:
 	UInputAction* InteractAction;
 	
 	UPROPERTY(EditAnywhere, Category = "Input|Action|HandMovement")
-	UInputAction* ToggleHandMovement;
+	UInputAction* ToggleHandMovementAction;
 	
 	UPROPERTY(EditAnywhere, Category = "Input|Action|HandMovement")
 	UInputAction* HandMovementAction;
@@ -85,9 +91,14 @@ protected:
 private:
 	
 	void Move(const FInputActionValue& Value);
-	//void Look(const FInputActionValue& Value);
+	void Look(const FInputActionValue& Value);
+
+	//Hand Movement
 	void MoveHand(const FInputActionValue& Value);
 	void TurnHand(const FInputActionValue& Value);
+	
+	void ActivateHandMovement();
+	void DeactivateHandMovement();
 	
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Input|Action|Move")
