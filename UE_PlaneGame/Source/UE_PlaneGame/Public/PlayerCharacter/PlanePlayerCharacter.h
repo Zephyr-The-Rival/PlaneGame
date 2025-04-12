@@ -4,15 +4,19 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "UtilityActors/Turbulence/TurbulenceAffected.h"
 #include "PlanePlayerCharacter.generated.h"
 
 
+class UTextRenderComponent;
+struct FInputActionValue;
+class APlanePlayerController;
 class UCameraComponent;
 class UInputMappingContext;
 class UInputAction;
 
 UCLASS()
-class UE_PLANEGAME_API APlanePlayerCharacter : public ACharacter
+class UE_PLANEGAME_API APlanePlayerCharacter : public ACharacter, public ITurbulenceAffected
 {
 	GENERATED_BODY()
 
@@ -31,6 +35,11 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+//helper
+
+protected:
+	APlanePlayerController* MyPlayerController;
+	
 //Components
 
 	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
@@ -42,8 +51,13 @@ public:
 	//Basic Input
 protected:
 	UPROPERTY(EditAnywhere, Category = "Input | Mapping")
-	UInputMappingContext* CharacterInputMapping;
+	UInputMappingContext* BasicCharacterInputMappingContext;
 
+private:
+	void AddMappingContext(UInputMappingContext* MappingContextToAdd);
+	void RemoveMappingContext(UInputMappingContext* MappingContextToRemove);
+	
+protected:
 	UPROPERTY(EditAnywhere, Category = "Input | Action")
 	UInputAction* MoveAction;
 
@@ -55,4 +69,16 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Input | Action")
 	UInputAction* InteractAction;
+
+	//process input
+
+	//Moving
+private:
+	
+	void Move(const FInputActionValue& Value);
+	void Look(const FInputActionValue& Value);
+	
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float MovementSpeed =300;
 };
