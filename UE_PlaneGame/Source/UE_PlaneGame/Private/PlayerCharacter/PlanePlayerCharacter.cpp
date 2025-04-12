@@ -9,7 +9,8 @@
 #include "EnhancedInputComponent.h"
 #include "InputMappingContext.h"
 #include "InputActionValue.h"
-#include "Components/TextRenderComponent.h"
+#include "Debug.h"
+
 
 
 // Sets default values
@@ -51,9 +52,10 @@ void APlanePlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 		return;
 
 	EIC->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::Move);
-	EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::Look);
+	//EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::Look);
 	EIC->BindAction(JumpAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::Jump);
 	EIC->BindAction(HandMovementAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::MoveHand);
+	EIC->BindAction(HandTurnAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::TurnHand);
 }
 
 void APlanePlayerCharacter::AddMappingContext(UInputMappingContext* MappingContextToAdd)
@@ -82,12 +84,44 @@ void APlanePlayerCharacter::Move(const FInputActionValue& Value)
 	AddMovementInput(MovementInputVector);
 }
 
-void APlanePlayerCharacter::Look(const FInputActionValue& Value)
-{
-	FVector2D DeltaLook= Value.Get<FVector2D>();
+// void APlanePlayerCharacter::Look(const FInputActionValue& Value)
+// {
+// 	FVector2D DeltaLook= Value.Get<FVector2D>();
+//
+// 	AddControllerPitchInput(DeltaLook.Y*-1);
+// 	AddControllerYawInput(DeltaLook.X);
+// }
 
-	AddControllerPitchInput(DeltaLook.Y*-1);
-	AddControllerYawInput(DeltaLook.X);
+void APlanePlayerCharacter::MoveHand(const FInputActionValue& Value)
+{
+	FVector2D VectorValue = Value.Get<FVector2D>();
+	FVector MovementVector = FVector(0, VectorValue.X, VectorValue.Y);
+	MovementVector *= HandMovementSpeed * GetWorld()->DeltaTimeSeconds;
+
+	FVector PredictedPosition=PlayerHand->GetRelativeLocation()+MovementVector;
+	PredictedPosition*=FVector(0,1,1);//ignore Depth
+	Debug::Print("Hand distance to center: "+ FString::SanitizeFloat(PredictedPosition.Length()),GetWorld()->DeltaTimeSeconds);
+	if(PredictedPosition.Length()<this->CameraMoveDistanceThreshold)
+	{
+		this->PlayerHand->AddRelativeLocation(MovementVector);	
+	}
+	else
+	{
+		FVector2D DeltaLook = Value.Get<FVector2D>();
+		DeltaLook*=this->HandMovementCameraSpeed;
+
+		AddControllerPitchInput(DeltaLook.Y * -1);
+		AddControllerYawInput(DeltaLook.X);
+	}
+	
+	
+}
+
+void APlanePlayerCharacter::TurnHand(const FInputActionValue& Value)
+{
+	float FValue=Value.Get<float>();
+	FRotator DeltaRotaion= FRotator(0,0,FValue*HandTurnSpeed*GetWorld()->DeltaTimeSeconds);
+	PlayerHand->AddLocalRotation(DeltaRotaion);
 }
 
 

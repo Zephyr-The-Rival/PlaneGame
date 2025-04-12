@@ -58,22 +58,25 @@ private:
 	void RemoveMappingContext(UInputMappingContext* MappingContextToRemove);
 	
 protected:
-	UPROPERTY(EditAnywhere, Category = "Input | Action")
+	UPROPERTY(EditAnywhere, Category = "Input|Action|Move")
 	UInputAction* MoveAction;
 
-	UPROPERTY(EditAnywhere, Category = "Input | Action")
-	UInputAction* LookAction;
+	// UPROPERTY(EditAnywhere, Category = "Input|Action")
+	// UInputAction* LookAction;
 
-	UPROPERTY(EditAnywhere, Category = "Input | Action")
+	UPROPERTY(EditAnywhere, Category = "Input|Action|Move")
 	UInputAction* JumpAction;
 
-	UPROPERTY(EditAnywhere, Category = "Input | Action")
+	UPROPERTY(EditAnywhere, Category = "Input|Action")
 	UInputAction* InteractAction;
-
-	UPROPERTY(EditAnywhere, Category = "Input | Action")
+	
+	UPROPERTY(EditAnywhere, Category = "Input|Action|HandMovement")
+	UInputAction* ToggleHandMovement;
+	
+	UPROPERTY(EditAnywhere, Category = "Input|Action|HandMovement")
 	UInputAction* HandMovementAction;
 
-	UPROPERTY(EditAnywhere, Category = "Input | Action")
+	UPROPERTY(EditAnywhere, Category = "Input|Action|HandMovement")
 	UInputAction* HandTurnAction;
 
 	//process input
@@ -82,10 +85,23 @@ protected:
 private:
 	
 	void Move(const FInputActionValue& Value);
-	void Look(const FInputActionValue& Value);
+	//void Look(const FInputActionValue& Value);
 	void MoveHand(const FInputActionValue& Value);
+	void TurnHand(const FInputActionValue& Value);
 	
 protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Input|Action|Move")
 	float MovementSpeed =300;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Input|Action|HandMovement")
+	float HandMovementSpeed =10;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite,Category = "Input|Action|HandMovement")
+	float HandTurnSpeed =60;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite,Category = "Input|Action|HandMovement")
+	float CameraMoveDistanceThreshold =35;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Input|Action|HandMovement")
+	float HandMovementCameraSpeed = 0.5f;
 };
