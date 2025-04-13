@@ -55,13 +55,16 @@ void UTurbulenceReciever::ApplyTurbulence(float DeltaTime, const FVector& Turbul
 	if (APlanePlayerCharacter* PlayerCharacter = Cast<APlanePlayerCharacter>(OwnerActor))
 	{
 		//PlayerCharacter->AddActorWorldOffset(TurbulenceValue*DeltaTime);
+		return;
 	}
 
+	
 	if (UPrimitiveComponent* PrimitiveComponent = Cast<UPrimitiveComponent>(OwnerActor->GetRootComponent()))
 	{
-		PrimitiveComponent->AddForce(TurbulenceVector * DeltaTime * 100000);
-		//PrimitiveComponent->ComponentVelocity+=TurbulenceVector*DeltaTime*100000;
-		//PrimitiveComponent->GetOwner()->Veloc
+		//PrimitiveComponent->AddForce(TurbulenceVector * DeltaTime * 100000);
+		//PrimitiveComponent->AddVelocityChangeImpulseAtLocation(TurbulenceVector*DeltaTime, PrimitiveComponent->GetComponentLocation()*1000);
+		//PrimitiveComponent->AddWorldOffset(TurbulenceVector*DeltaTime);
+		PrimitiveComponent->AddForce(TurbulenceVector * DeltaTime * 5000 *PrimitiveComponent->GetMass());
 	}
 }
 

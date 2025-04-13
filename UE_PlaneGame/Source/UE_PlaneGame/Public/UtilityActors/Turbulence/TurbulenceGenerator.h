@@ -62,5 +62,9 @@ public:
 	
 private:
 	void BrodcastTurbulence();
+
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bActive=false;
 	
 };

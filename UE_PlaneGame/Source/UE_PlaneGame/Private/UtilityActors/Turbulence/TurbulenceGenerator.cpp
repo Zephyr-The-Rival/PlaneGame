@@ -40,7 +40,8 @@ void ATurbulenceGenerator::Tick(float DeltaTime)
 
 	TurbulenceValue = TargetValue;
 
-	BrodcastTurbulence();
+	if(this->bActive)
+		BrodcastTurbulence();
 }
 
 void ATurbulenceGenerator::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
