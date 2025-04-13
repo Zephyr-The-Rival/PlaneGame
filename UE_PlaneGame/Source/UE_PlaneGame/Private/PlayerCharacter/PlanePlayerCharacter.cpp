@@ -168,8 +168,7 @@ void APlanePlayerCharacter::PickUp()
 	AWorldItem* OverlappingItem = this->GetPlayerHand()->GetOverlappingItem();
 	if (!OverlappingItem)
 		return;
-
-	//AI generated
+	
 	FAttachmentTransformRules AttachRules(
 		EAttachmentRule::SnapToTarget, // Location
 		EAttachmentRule::SnapToTarget, // Rotation
@@ -181,6 +180,7 @@ void APlanePlayerCharacter::PickUp()
 	if(UPrimitiveComponent* PhysicsComponent=Cast<UPrimitiveComponent>(OverlappingItem->GetRootComponent()))
 	{
 		PhysicsComponent->SetSimulatePhysics(false);
+		PhysicsComponent->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
 	}
 	CurrentyHeldWorldItem=OverlappingItem;
 	
@@ -201,6 +201,7 @@ void APlanePlayerCharacter::LetGo()
 	if(UPrimitiveComponent* PhysicsComponent=Cast<UPrimitiveComponent>(CurrentyHeldWorldItem->GetRootComponent()))
 	{
 		PhysicsComponent->SetSimulatePhysics(true);
+		PhysicsComponent->SetCollisionEnabled(ECollisionEnabled::Type::QueryAndPhysics);
 	}
 	
 	UTurbulenceReciever* TurbulenceReciever= Cast<UTurbulenceReciever>(CurrentyHeldWorldItem->GetComponentByClass(UTurbulenceReciever::StaticClass()));
