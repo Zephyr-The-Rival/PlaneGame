@@ -36,12 +36,16 @@ void APlanePlayerCharacter::BeginPlay()
 
 	this->AddMappingContext(this->BasicCharacterInputMappingContext);
 	this->AddMappingContext(MoveCameraMappingContext);
+
+	this->OriginalHandPosition= this->PlayerHandCA->GetRelativeLocation();//gets remembered to move back later
 }
 
 // Called every frame
 void APlanePlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	if(!bMovingHand)
+		Tick_MoveHandBack();
 }
 
 // Called to bind functionality to input
@@ -113,7 +117,7 @@ void APlanePlayerCharacter::MoveHand(const FInputActionValue& Value)
 
 	FVector PredictedPosition=PlayerHandCA->GetRelativeLocation()+MovementVector;
 	PredictedPosition*=FVector(0,1,1);//ignore Depth
-	//Debug::Print("Hand distance to center: "+ FString::SanitizeFloat(PredictedPosition.Length()),GetWorld()->DeltaTimeSeconds);
+	Debug::Print("Hand distance to center: "+ FString::SanitizeFloat(PredictedPosition.Length()),GetWorld()->DeltaTimeSeconds);
 	if(PredictedPosition.Length()<this->CameraMoveDistanceThreshold)
 	{
 		this->PlayerHandCA->AddRelativeLocation(MovementVector);	
@@ -139,12 +143,14 @@ void APlanePlayerCharacter::TurnHand(const FInputActionValue& Value)
 
 void APlanePlayerCharacter::ActivateHandMovement()
 {
+	this->bMovingHand=true;
 	this->AddMappingContext(MoveHandMappingContext);
 	this->RemoveMappingContext(MoveCameraMappingContext);
 }
 
 void APlanePlayerCharacter::DeactivateHandMovement()
 {
+	this->bMovingHand=false;
 	this->RemoveMappingContext(MoveHandMappingContext);
 	this->AddMappingContext(MoveCameraMappingContext);
 }
@@ -205,6 +211,11 @@ void APlanePlayerCharacter::LetGo()
 	
 	CurrentyHeldWorldItem=nullptr;
 	
+}
+
+void APlanePlayerCharacter::Tick_MoveHandBack()
+{
+	this->PlayerHandCA->SetRelativeLocation(FMath::VInterpTo(this->PlayerHandCA->GetRelativeLocation(),this->OriginalHandPosition,GetWorld()->DeltaTimeSeconds,1));
 }
 
 

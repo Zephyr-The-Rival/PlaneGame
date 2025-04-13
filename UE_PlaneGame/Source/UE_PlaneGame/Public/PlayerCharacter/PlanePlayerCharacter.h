@@ -50,6 +50,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	UChildActorComponent* PlayerHandCA;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FVector OriginalHandPosition;
+	
 private:
 	APlayerHand* GetPlayerHand();
 	
@@ -109,6 +112,11 @@ private:
 	void PickUp();
 	void LetGo();
 	AWorldItem* CurrentyHeldWorldItem=nullptr;
+
+	//for moving hand back
+	bool bMovingHand=false;
+	
+	void Tick_MoveHandBack();
 	
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Input|Action|Move")
