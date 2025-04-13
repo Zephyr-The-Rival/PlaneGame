@@ -10,7 +10,8 @@
 #include "InputMappingContext.h"
 #include "InputActionValue.h"
 #include "Debug.h"
-
+#include "Items/WorldItem.h"
+#include "PlayerCharacter/PlayerHand.h"
 
 
 // Sets default values
@@ -23,8 +24,8 @@ APlanePlayerCharacter::APlanePlayerCharacter()
 	FirstPersonCamera->SetupAttachment(RootComponent);
 	FirstPersonCamera->bUsePawnControlRotation = true;
 	
-	PlayerHand= CreateDefaultSubobject<UChildActorComponent>(TEXT("ChildActor"));
-	PlayerHand->SetupAttachment(FirstPersonCamera);
+	PlayerHandCA= CreateDefaultSubobject<UChildActorComponent>(TEXT("ChildActor"));
+	PlayerHandCA->SetupAttachment(FirstPersonCamera);
 }
 
 // Called when the game starts or when spawned
@@ -55,10 +56,19 @@ void APlanePlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 	EIC->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::Move);
 	EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::Look);
 	EIC->BindAction(JumpAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::Jump);
+
+	EIC->BindAction(GrabAction, ETriggerEvent::Completed, this, &APlanePlayerCharacter::Grab);
+	
 	EIC->BindAction(HandMovementAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::MoveHand);
 	EIC->BindAction(HandTurnAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::TurnHand);
 	EIC->BindAction(ToggleHandMovementAction, ETriggerEvent::Started, this, &APlanePlayerCharacter::ActivateHandMovement);
 	EIC->BindAction(ToggleHandMovementAction, ETriggerEvent::Completed, this, &APlanePlayerCharacter::DeactivateHandMovement);
+	
+}
+
+APlayerHand* APlanePlayerCharacter::GetPlayerHand()
+{
+	return Cast<APlayerHand>(this->PlayerHandCA->GetChildActor());
 }
 
 void APlanePlayerCharacter::AddMappingContext(UInputMappingContext* MappingContextToAdd)
@@ -101,12 +111,12 @@ void APlanePlayerCharacter::MoveHand(const FInputActionValue& Value)
 	FVector MovementVector = FVector(0, VectorValue.X, VectorValue.Y);
 	MovementVector *= HandMovementSpeed * GetWorld()->DeltaTimeSeconds;
 
-	FVector PredictedPosition=PlayerHand->GetRelativeLocation()+MovementVector;
+	FVector PredictedPosition=PlayerHandCA->GetRelativeLocation()+MovementVector;
 	PredictedPosition*=FVector(0,1,1);//ignore Depth
-	Debug::Print("Hand distance to center: "+ FString::SanitizeFloat(PredictedPosition.Length()),GetWorld()->DeltaTimeSeconds);
+	//Debug::Print("Hand distance to center: "+ FString::SanitizeFloat(PredictedPosition.Length()),GetWorld()->DeltaTimeSeconds);
 	if(PredictedPosition.Length()<this->CameraMoveDistanceThreshold)
 	{
-		this->PlayerHand->AddRelativeLocation(MovementVector);	
+		this->PlayerHandCA->AddRelativeLocation(MovementVector);	
 	}
 	else
 	{
@@ -124,7 +134,7 @@ void APlanePlayerCharacter::TurnHand(const FInputActionValue& Value)
 {
 	float FValue=Value.Get<float>();
 	FRotator DeltaRotaion= FRotator(0,0,FValue*HandTurnSpeed*GetWorld()->DeltaTimeSeconds);
-	PlayerHand->AddLocalRotation(DeltaRotaion);
+	PlayerHandCA->AddLocalRotation(DeltaRotaion);
 }
 
 void APlanePlayerCharacter::ActivateHandMovement()
@@ -137,6 +147,64 @@ void APlanePlayerCharacter::DeactivateHandMovement()
 {
 	this->RemoveMappingContext(MoveHandMappingContext);
 	this->AddMappingContext(MoveCameraMappingContext);
+}
+
+void APlanePlayerCharacter::Grab()
+{
+	if(CurrentyHeldWorldItem)
+		LetGo();
+	else
+		PickUp();
+}
+
+void APlanePlayerCharacter::PickUp()
+{
+	AWorldItem* OverlappingItem = this->GetPlayerHand()->GetOverlappingItem();
+	if (!OverlappingItem)
+		return;
+
+	//AI generated
+	FAttachmentTransformRules AttachRules(
+		EAttachmentRule::SnapToTarget, // Location
+		EAttachmentRule::SnapToTarget, // Rotation
+		EAttachmentRule::KeepWorld, // Scale
+		true // Weld simulated bodies
+	);
+
+	OverlappingItem->AttachToComponent(this->PlayerHandCA, AttachRules);
+	if(UPrimitiveComponent* PhysicsComponent=Cast<UPrimitiveComponent>(OverlappingItem->GetRootComponent()))
+	{
+		PhysicsComponent->SetSimulatePhysics(false);
+	}
+	CurrentyHeldWorldItem=OverlappingItem;
+	
+	UTurbulenceReciever* TurbulenceReciever= Cast<UTurbulenceReciever>(CurrentyHeldWorldItem->GetComponentByClass(UTurbulenceReciever::StaticClass()));
+	if(TurbulenceReciever)
+	{
+		TurbulenceReciever->bActive=false;
+	}
+}
+
+void APlanePlayerCharacter::LetGo()
+{
+	if(!CurrentyHeldWorldItem)
+		return;
+	
+	FDetachmentTransformRules DetachRules(EDetachmentRule::KeepWorld, true);
+	CurrentyHeldWorldItem->DetachFromActor(DetachRules);
+	if(UPrimitiveComponent* PhysicsComponent=Cast<UPrimitiveComponent>(CurrentyHeldWorldItem->GetRootComponent()))
+	{
+		PhysicsComponent->SetSimulatePhysics(true);
+	}
+	
+	UTurbulenceReciever* TurbulenceReciever= Cast<UTurbulenceReciever>(CurrentyHeldWorldItem->GetComponentByClass(UTurbulenceReciever::StaticClass()));
+	if(TurbulenceReciever)
+	{
+		TurbulenceReciever->bActive=true;
+	}
+	
+	CurrentyHeldWorldItem=nullptr;
+	
 }
 
 

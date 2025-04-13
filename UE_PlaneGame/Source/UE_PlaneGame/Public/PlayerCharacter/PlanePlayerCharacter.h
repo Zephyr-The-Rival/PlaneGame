@@ -4,10 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "UtilityActors/Turbulence/TurbulenceAffected.h"
 #include "PlanePlayerCharacter.generated.h"
 
 
+class UTurbulenceReciever;
+class APlayerHand;
+class AWorldItem;
 class UTextRenderComponent;
 struct FInputActionValue;
 class APlanePlayerController;
@@ -16,7 +18,7 @@ class UInputMappingContext;
 class UInputAction;
 
 UCLASS()
-class UE_PLANEGAME_API APlanePlayerCharacter : public ACharacter, public ITurbulenceAffected
+class UE_PLANEGAME_API APlanePlayerCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
@@ -46,7 +48,10 @@ protected:
 	UCameraComponent* FirstPersonCamera;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	UChildActorComponent* PlayerHand;
+	UChildActorComponent* PlayerHandCA;
+
+private:
+	APlayerHand* GetPlayerHand();
 	
 	//Basic Input
 protected:
@@ -72,9 +77,6 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Input|Action|Move")
 	UInputAction* JumpAction;
-
-	UPROPERTY(EditAnywhere, Category = "Input|Action")
-	UInputAction* InteractAction;
 	
 	UPROPERTY(EditAnywhere, Category = "Input|Action|HandMovement")
 	UInputAction* ToggleHandMovementAction;
@@ -84,6 +86,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Input|Action|HandMovement")
 	UInputAction* HandTurnAction;
+
+	UPROPERTY(EditAnywhere, Category = "Input|Action")
+	UInputAction* GrabAction;
 
 	//process input
 
@@ -99,6 +104,11 @@ private:
 	
 	void ActivateHandMovement();
 	void DeactivateHandMovement();
+
+	void Grab();
+	void PickUp();
+	void LetGo();
+	AWorldItem* CurrentyHeldWorldItem=nullptr;
 	
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Input|Action|Move")
