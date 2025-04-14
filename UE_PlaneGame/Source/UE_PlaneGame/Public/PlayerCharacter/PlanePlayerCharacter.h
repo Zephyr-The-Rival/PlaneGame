@@ -93,6 +93,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Input|Action")
 	UInputAction* GrabAction;
 
+	UPROPERTY(EditAnywhere, Category = "Input|Action")
+	UInputAction* CrouchAction;
+
 	//process input
 
 	//Moving
@@ -100,6 +103,9 @@ private:
 	
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
+
+	void StartCrouch();
+	void EndCrouch();
 
 	//Hand Movement
 	void MoveHand(const FInputActionValue& Value);

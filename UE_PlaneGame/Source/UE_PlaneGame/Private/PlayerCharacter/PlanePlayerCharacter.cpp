@@ -61,6 +61,9 @@ void APlanePlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 	EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::Look);
 	EIC->BindAction(JumpAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::Jump);
 
+	EIC->BindAction(CrouchAction, ETriggerEvent::Started, this, &APlanePlayerCharacter::StartCrouch);
+	EIC->BindAction(CrouchAction, ETriggerEvent::Completed, this, &APlanePlayerCharacter::EndCrouch);
+	
 	EIC->BindAction(GrabAction, ETriggerEvent::Completed, this, &APlanePlayerCharacter::Grab);
 	
 	EIC->BindAction(HandMovementAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::MoveHand);
@@ -107,6 +110,16 @@ void APlanePlayerCharacter::Look(const FInputActionValue& Value)
 
 	AddControllerPitchInput(DeltaLook.Y*-1);
 	AddControllerYawInput(DeltaLook.X);
+}
+
+void APlanePlayerCharacter::StartCrouch()
+{
+	this->Crouch();
+}
+
+void APlanePlayerCharacter::EndCrouch()
+{
+	this->UnCrouch();
 }
 
 void APlanePlayerCharacter::MoveHand(const FInputActionValue& Value)
