@@ -6,6 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "TurbulenceGenerator.generated.h"
 
+class UTurbulenceReciever;
+
 UCLASS()
 class UE_PLANEGAME_API ATurbulenceGenerator : public AActor
 {
@@ -52,10 +54,17 @@ private:
 	UPROPERTY(Replicated)
 	float NoiseDriver=0;
 
-private:
-	void ApplyTurbulence(float DeltaTime);
+
+public:
+	TArray<UTurbulenceReciever*> AllTurbulenceRecievers= TArray<UTurbulenceReciever*>();
+	void SubscribeToTurbulence(UTurbulenceReciever* RecieverToAdd);
 
 	
-	
+private:
+	void BrodcastTurbulence();
+
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bActive=false;
 	
 };

@@ -4,17 +4,19 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "UtilityActors/Turbulence/TurbulenceAffected.h"
-#include "WorldItem.generated.h"
+#include "PlayerHand.generated.h"
+
+class AWorldItem;
+class USphereComponent;
 
 UCLASS()
-class UE_PLANEGAME_API AWorldItem : public AActor, public ITurbulenceAffected
+class UE_PLANEGAME_API APlayerHand : public AActor
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this actor's properties
-	AWorldItem();
+	APlayerHand();
 
 protected:
 	// Called when the game starts or when spawned
@@ -23,4 +25,13 @@ protected:
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
+protected:
+	
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	USphereComponent* HandCollision;
+
+public:
+	AWorldItem* GetOverlappingItem();
 };

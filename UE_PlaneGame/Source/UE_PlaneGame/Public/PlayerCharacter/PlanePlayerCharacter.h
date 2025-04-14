@@ -4,10 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "UtilityActors/Turbulence/TurbulenceAffected.h"
 #include "PlanePlayerCharacter.generated.h"
 
 
+class UTurbulenceReciever;
+class APlayerHand;
+class AWorldItem;
 class UTextRenderComponent;
 struct FInputActionValue;
 class APlanePlayerController;
@@ -16,7 +18,7 @@ class UInputMappingContext;
 class UInputAction;
 
 UCLASS()
-class UE_PLANEGAME_API APlanePlayerCharacter : public ACharacter, public ITurbulenceAffected
+class UE_PLANEGAME_API APlanePlayerCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
@@ -41,34 +43,58 @@ protected:
 	APlanePlayerController* MyPlayerController;
 	
 //Components
-
-	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<USkeletalMeshComponent> FirstPersonMesh;
 	
 	UPROPERTY(EditAnywhere, Category = "Camera", BlueprintReadOnly)
 	UCameraComponent* FirstPersonCamera;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UChildActorComponent* PlayerHandCA;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FVector OriginalHandPosition;
+	
+private:
+	APlayerHand* GetPlayerHand();
 	
 	//Basic Input
 protected:
 	UPROPERTY(EditAnywhere, Category = "Input | Mapping")
 	UInputMappingContext* BasicCharacterInputMappingContext;
+	
+	UPROPERTY(EditAnywhere, Category = "Input | Mapping")
+	UInputMappingContext* MoveHandMappingContext;
+
+	UPROPERTY(EditAnywhere, Category = "Input | Mapping")
+	UInputMappingContext* MoveCameraMappingContext;
 
 private:
 	void AddMappingContext(UInputMappingContext* MappingContextToAdd);
 	void RemoveMappingContext(UInputMappingContext* MappingContextToRemove);
 	
 protected:
-	UPROPERTY(EditAnywhere, Category = "Input | Action")
+	UPROPERTY(EditAnywhere, Category = "Input|Action|Move")
 	UInputAction* MoveAction;
 
-	UPROPERTY(EditAnywhere, Category = "Input | Action")
+	UPROPERTY(EditAnywhere, Category = "Input|Action")
 	UInputAction* LookAction;
 
-	UPROPERTY(EditAnywhere, Category = "Input | Action")
+	UPROPERTY(EditAnywhere, Category = "Input|Action|Move")
 	UInputAction* JumpAction;
+	
+	UPROPERTY(EditAnywhere, Category = "Input|Action|HandMovement")
+	UInputAction* ToggleHandMovementAction;
+	
+	UPROPERTY(EditAnywhere, Category = "Input|Action|HandMovement")
+	UInputAction* HandMovementAction;
 
-	UPROPERTY(EditAnywhere, Category = "Input | Action")
-	UInputAction* InteractAction;
+	UPROPERTY(EditAnywhere, Category = "Input|Action|HandMovement")
+	UInputAction* HandTurnAction;
+
+	UPROPERTY(EditAnywhere, Category = "Input|Action")
+	UInputAction* GrabAction;
+
+	UPROPERTY(EditAnywhere, Category = "Input|Action")
+	UInputAction* CrouchAction;
 
 	//process input
 
@@ -77,8 +103,40 @@ private:
 	
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
+
+	void StartCrouch();
+	void EndCrouch();
+
+	//Hand Movement
+	void MoveHand(const FInputActionValue& Value);
+	void TurnHand(const FInputActionValue& Value);
+	
+	void ActivateHandMovement();
+	void DeactivateHandMovement();
+
+	void Grab();
+	void PickUp();
+	void LetGo();
+	AWorldItem* CurrentyHeldWorldItem=nullptr;
+
+	//for moving hand back
+	bool bMovingHand=false;
+	
+	void Tick_MoveHandBack();
 	
 protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Input|Action|Move")
 	float MovementSpeed =300;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Input|Action|HandMovement")
+	float HandMovementSpeed =10;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite,Category = "Input|Action|HandMovement")
+	float HandTurnSpeed =60;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite,Category = "Input|Action|HandMovement")
+	float CameraMoveDistanceThreshold =35;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Input|Action|HandMovement")
+	float HandMovementCameraSpeed = 0.5f;
 };
