@@ -8,7 +8,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "PlayerCharacter/PlanePlayerCharacter.h"
-#include "UtilityActors/Turbulence/TurbulenceAffected.h"
+ #include "UtilityActors/Turbulence/TurbulenceReciever.h"
 
 
 // Sets default values
@@ -40,7 +40,8 @@ void ATurbulenceGenerator::Tick(float DeltaTime)
 
 	TurbulenceValue = TargetValue;
 
-	ApplyTurbulence(DeltaTime);
+	if(this->bActive)
+		BrodcastTurbulence();
 }
 
 void ATurbulenceGenerator::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -59,30 +60,17 @@ void ATurbulenceGenerator::SetTurbulenceStrength(const float NewStrength)
 	this->TurbulenceStrength=NewStrength;
 }
 
-void ATurbulenceGenerator::ApplyTurbulence(float DeltaTime)
+void ATurbulenceGenerator::BrodcastTurbulence()
 {
-	TArray<AActor*> AllActors;
-	UGameplayStatics::GetAllActorsWithInterface(GetWorld(), UTurbulenceAffected::StaticClass(), AllActors);
-
-	for (AActor* Actor : AllActors)
+	for(UTurbulenceReciever* Reciever:this->AllTurbulenceRecievers)
 	{
-		ITurbulenceAffected* Interface = Cast<ITurbulenceAffected>(Actor);
-		if (Interface)
-		{
-			
-			if (APlanePlayerCharacter* PlayerCharacter=  Cast<APlanePlayerCharacter>(Actor))
-			{
-				//PlayerCharacter->AddActorWorldOffset(TurbulenceValue*DeltaTime);
-				continue;
-			}
-
-			if (UPrimitiveComponent* PrimitiveComponent = Cast<UPrimitiveComponent>(Actor->GetRootComponent()))
-			{
-				PrimitiveComponent->AddForce(TurbulenceValue * DeltaTime * 100000);
-			}
-			
-		}
+		Reciever->ApplyTurbulence(GetWorld()->GetDeltaSeconds(), this->TurbulenceValue);
 	}
+}
+
+void ATurbulenceGenerator::SubscribeToTurbulence(UTurbulenceReciever* RecieverToAdd)
+{
+	this->AllTurbulenceRecievers.Add(RecieverToAdd);
 }
 
 
