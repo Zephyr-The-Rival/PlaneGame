@@ -6,9 +6,6 @@
 #include "Items/WorldItem.h"
 #include "Tool.generated.h"
 
-/**
- * Basic tool class for all items that can be held and activated by the player
- */
 UCLASS()
 class UE_PLANEGAME_API ATool : public AWorldItem
 {
@@ -16,27 +13,35 @@ class UE_PLANEGAME_API ATool : public AWorldItem
     
 public:    
 	ATool();
-	
+
 	virtual void Tick(float DeltaTime) override;
-	
-	UFUNCTION(BlueprintCallable, Category = "Tool")
-	virtual void OnHandMovement(FVector MovementVector);
-	
-	UFUNCTION(BlueprintCallable, Category = "Tool")
-	virtual void OnHandMovementStopped();
-	
-	UFUNCTION(BlueprintNativeEvent, Category = "Tool")
+    
+	void OnHandMovement(FVector MovementVector);
+	void OnHandMovementStopped();
+    
+	UFUNCTION(BlueprintNativeEvent)
 	void ActivateTool(FVector MovementVector);
-	
-	UFUNCTION(BlueprintNativeEvent, Category = "Tool")
+	void ActivateTool_Implementation(FVector MovementVector);
+    
+	UFUNCTION(BlueprintNativeEvent)
 	void DeactivateTool();
+	void DeactivateTool_Implementation();
+	
+	UFUNCTION(BlueprintNativeEvent)
+	void OnMovementThresholdReached();
+	void OnMovementThresholdReached_Implementation();
 
 protected:
 	virtual void BeginPlay() override;
-	
-	UPROPERTY(BlueprintReadOnly, Category = "Tool")
-	bool bToolActive = false;
-	
-	UPROPERTY(BlueprintReadOnly, Category = "Tool")
+    
+	bool bToolActive;
 	FVector LastMovementDirection;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tool Movement")
+	float MovementThreshold;
+    
+	UPROPERTY(BlueprintReadOnly, Category = "Tool Movement")
+	float AccumulatedDistance;
+    
+	FVector LastPosition;
 };
