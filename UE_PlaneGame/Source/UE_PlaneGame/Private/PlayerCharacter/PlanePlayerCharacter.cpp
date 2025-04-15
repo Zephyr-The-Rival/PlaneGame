@@ -10,6 +10,7 @@
 #include "InputMappingContext.h"
 #include "InputActionValue.h"
 #include "Debug.h"
+#include "Items/Tool.h"
 #include "Items/WorldItem.h"
 #include "PlayerCharacter/PlayerHand.h"
 
@@ -125,6 +126,9 @@ void APlanePlayerCharacter::EndCrouch()
 void APlanePlayerCharacter::MoveHand(const FInputActionValue& Value)
 {
 	FVector2D VectorValue = Value.Get<FVector2D>();
+
+	bool bHandIsMoving = !VectorValue.IsNearlyZero();
+	
 	FVector MovementVector = FVector(0, VectorValue.X, VectorValue.Y);
 	MovementVector *= HandMovementSpeed * GetWorld()->DeltaTimeSeconds;
 
@@ -133,7 +137,11 @@ void APlanePlayerCharacter::MoveHand(const FInputActionValue& Value)
 	Debug::Print("Hand distance to center: "+ FString::SanitizeFloat(PredictedPosition.Length()),GetWorld()->DeltaTimeSeconds);
 	if(PredictedPosition.Length()<this->CameraMoveDistanceThreshold)
 	{
-		this->PlayerHandCA->AddRelativeLocation(MovementVector);	
+		this->PlayerHandCA->AddRelativeLocation(MovementVector);
+		if (bHandIsMoving)
+		{
+			NotifyToolHandMovement(MovementVector);
+		}
 	}
 	else
 	{
@@ -164,6 +172,14 @@ void APlanePlayerCharacter::ActivateHandMovement()
 void APlanePlayerCharacter::DeactivateHandMovement()
 {
 	this->bMovingHand=false;
+	if (CurrentyHeldWorldItem)
+	{
+		ATool* Tool = Cast<ATool>(CurrentyHeldWorldItem);
+		if (Tool)
+		{
+			Tool->OnHandMovementStopped();
+		}
+	}
 	this->RemoveMappingContext(MoveHandMappingContext);
 	this->AddMappingContext(MoveCameraMappingContext);
 }
@@ -230,6 +246,18 @@ void APlanePlayerCharacter::LetGo()
 void APlanePlayerCharacter::Tick_MoveHandBack()
 {
 	this->PlayerHandCA->SetRelativeLocation(FMath::VInterpTo(this->PlayerHandCA->GetRelativeLocation(),this->OriginalHandPosition,GetWorld()->DeltaTimeSeconds,1));
+}
+
+void APlanePlayerCharacter::NotifyToolHandMovement(const FVector& MovementVector)
+{
+	if (CurrentyHeldWorldItem)
+	{
+		ATool* Tool = Cast<ATool>(CurrentyHeldWorldItem);
+		if (Tool)
+		{
+			Tool->OnHandMovement(MovementVector);
+		}
+	}
 }
 
 

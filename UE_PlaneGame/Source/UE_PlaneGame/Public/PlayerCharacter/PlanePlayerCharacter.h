@@ -124,6 +124,8 @@ private:
 	
 	void Tick_MoveHandBack();
 	
+	void NotifyToolHandMovement(const FVector& MovementVector);
+	
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Input|Action|Move")
 	float MovementSpeed =300;
