@@ -3,6 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GrabHandle.h"
+#include "IGrabHandleActor.h"
 #include "GameFramework/Character.h"
 #include "PlanePlayerCharacter.generated.h"
 
@@ -118,6 +120,8 @@ private:
 	void PickUp();
 	void LetGo();
 	AWorldItem* CurrentyHeldWorldItem=nullptr;
+	IIGrabHandleActor* CurrentGrabHandleActor=nullptr;
+	AGrabHandle* GrabHandle =nullptr;
 
 	//for moving hand back
 	bool bMovingHand=false;
