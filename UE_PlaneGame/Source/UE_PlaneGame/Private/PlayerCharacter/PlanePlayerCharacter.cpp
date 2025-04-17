@@ -10,6 +10,8 @@
 #include "InputMappingContext.h"
 #include "InputActionValue.h"
 #include "Debug.h"
+#include "GrabHandle.h"
+#include "IGrabHandleActor.h"
 #include "Items/Tool.h"
 #include "Items/WorldItem.h"
 #include "PlayerCharacter/PlayerHand.h"
@@ -186,7 +188,7 @@ void APlanePlayerCharacter::DeactivateHandMovement()
 
 void APlanePlayerCharacter::Grab()
 {
-	if(CurrentyHeldWorldItem)
+	if(CurrentyHeldWorldItem || CurrentGrabHandleActor)
 		LetGo();
 	else
 		PickUp();
@@ -197,50 +199,121 @@ void APlanePlayerCharacter::PickUp()
 	AWorldItem* OverlappingItem = this->GetPlayerHand()->GetOverlappingItem();
 	if (!OverlappingItem)
 		return;
+
+	GrabHandle = Cast<AGrabHandle>(OverlappingItem);
 	
-	FAttachmentTransformRules AttachRules(
+	if (GrabHandle)
+	{
+		// Check if parent actor has interface to define GrabHandle function
+		if(!GrabHandle->GetParentActor()->GetClass()->ImplementsInterface(UIGrabHandleActor::StaticClass() ))
+		{
+			if (GEngine)
+				GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, "Actor with GrabHandle actor doesn't implement the IGrabHandleActor interface");
+			return;
+		}
+		
+		// Check if detected actor is child actor of interact actor
+		UChildActorComponent* Grab = nullptr;
+		TArray<UChildActorComponent*> AttachedActors;
+		GrabHandle->GetParentActor()->GetComponents<UChildActorComponent>(AttachedActors);
+		
+		for (auto Element : AttachedActors)
+		{
+			if(Element->GetChildActor() == GrabHandle)
+			{
+				Grab = Element;
+				break;
+			}
+		}
+
+		if(Grab == nullptr)
+		{
+			if (GEngine)
+				GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, "Couldn't find child actor component which spawned GrabHandle actor!");
+			return;
+		}
+
+		CurrentGrabHandleActor = Cast<IIGrabHandleActor>(GrabHandle->GetParentActor());
+		CurrentGrabHandleActor->Execute_OnHandGrabbed(GrabHandle->GetParentActor(),this->GetPlayerHand(), this);
+
+		/*
+		FAttachmentTransformRules AttachRules(
+		EAttachmentRule::SnapToTarget, // Location
+		EAttachmentRule::KeepRelative, // Rotation
+		EAttachmentRule::KeepWorld, // Scale
+		false // Weld simulated bodies
+		);
+		
+		if(this->PlayerHandCA->AttachToComponent(Grab, AttachRules))
+		{
+			if (GEngine)
+				GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green, "Successfully attached to GrabHandle");
+
+			CurrentGrabHandleActor = Cast<IIGrabHandleActor>(GrabHandle->GetParentActor());
+			CurrentGrabHandleActor->Execute_OnHandGrabbed(GrabHandle->GetParentActor(),this->GetPlayerHand());
+		}
+		else
+		{
+			if (GEngine)
+				GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, "Attaching Player Hand to GrabHandle failed");
+		}
+		*/
+		
+	}
+	else
+	{
+		FAttachmentTransformRules AttachRules(
 		EAttachmentRule::SnapToTarget, // Location
 		EAttachmentRule::SnapToTarget, // Rotation
 		EAttachmentRule::KeepWorld, // Scale
 		true // Weld simulated bodies
-	);
+		);
 
-	OverlappingItem->AttachToComponent(this->PlayerHandCA, AttachRules);
-	if(UPrimitiveComponent* PhysicsComponent=Cast<UPrimitiveComponent>(OverlappingItem->GetRootComponent()))
-	{
-		PhysicsComponent->SetSimulatePhysics(false);
-		PhysicsComponent->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
-	}
-	CurrentyHeldWorldItem=OverlappingItem;
+		OverlappingItem->AttachToComponent(this->PlayerHandCA, AttachRules);
+		if(UPrimitiveComponent* PhysicsComponent=Cast<UPrimitiveComponent>(OverlappingItem->GetRootComponent()))
+		{
+			PhysicsComponent->SetSimulatePhysics(false);
+			PhysicsComponent->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
+		}
+		CurrentyHeldWorldItem=OverlappingItem;
 	
-	UTurbulenceReciever* TurbulenceReciever= Cast<UTurbulenceReciever>(CurrentyHeldWorldItem->GetComponentByClass(UTurbulenceReciever::StaticClass()));
-	if(TurbulenceReciever)
-	{
-		TurbulenceReciever->bActive=false;
+		UTurbulenceReciever* TurbulenceReciever= Cast<UTurbulenceReciever>(CurrentyHeldWorldItem->GetComponentByClass(UTurbulenceReciever::StaticClass()));
+		if(TurbulenceReciever)
+		{
+			TurbulenceReciever->bActive=false;
+		}
 	}
 }
 
 void APlanePlayerCharacter::LetGo()
 {
-	if(!CurrentyHeldWorldItem)
+	if(!CurrentyHeldWorldItem && !CurrentGrabHandleActor)
 		return;
-	
-	FDetachmentTransformRules DetachRules(EDetachmentRule::KeepWorld, true);
-	CurrentyHeldWorldItem->DetachFromActor(DetachRules);
-	if(UPrimitiveComponent* PhysicsComponent=Cast<UPrimitiveComponent>(CurrentyHeldWorldItem->GetRootComponent()))
+
+	if(CurrentGrabHandleActor)
 	{
-		PhysicsComponent->SetSimulatePhysics(true);
-		PhysicsComponent->SetCollisionEnabled(ECollisionEnabled::Type::QueryAndPhysics);
+		CurrentGrabHandleActor->Execute_OnHandReleased(GrabHandle->GetParentActor(),this->GetPlayerHand(),this);
+		CurrentGrabHandleActor=nullptr;
+		GrabHandle=nullptr;
 	}
-	
-	UTurbulenceReciever* TurbulenceReciever= Cast<UTurbulenceReciever>(CurrentyHeldWorldItem->GetComponentByClass(UTurbulenceReciever::StaticClass()));
-	if(TurbulenceReciever)
+	else
 	{
-		TurbulenceReciever->bActive=true;
+		FDetachmentTransformRules DetachRules(EDetachmentRule::KeepWorld, true);
+		CurrentyHeldWorldItem->DetachFromActor(DetachRules);
+		if(UPrimitiveComponent* PhysicsComponent=Cast<UPrimitiveComponent>(CurrentyHeldWorldItem->GetRootComponent()))
+		{
+			PhysicsComponent->SetSimulatePhysics(true);
+			PhysicsComponent->SetCollisionEnabled(ECollisionEnabled::Type::QueryAndPhysics);
+		}
+	
+		UTurbulenceReciever* TurbulenceReciever= Cast<UTurbulenceReciever>(CurrentyHeldWorldItem->GetComponentByClass(UTurbulenceReciever::StaticClass()));
+		if(TurbulenceReciever)
+		{
+			TurbulenceReciever->bActive=true;
+		}
+	
+		CurrentyHeldWorldItem=nullptr;
 	}
-	
-	CurrentyHeldWorldItem=nullptr;
-	
 }
 
 void APlanePlayerCharacter::Tick_MoveHandBack()
