@@ -4,6 +4,7 @@
 #include "UtilityActors/Turbulence/TurbulenceReciever.h"
 
 #include "ComponentUtils.h"
+#include "Engine/TriggerBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "PlayerCharacter/PlanePlayerCharacter.h"
 #include "UtilityActors/Turbulence/TurbulenceGenerator.h"
@@ -26,6 +27,8 @@ void UTurbulenceReciever::BeginPlay()
 	Super::BeginPlay();
 	MyTurbulenceGenerator = Cast<ATurbulenceGenerator>(UGameplayStatics::GetActorOfClass(GetWorld(), ATurbulenceGenerator::StaticClass()));
 	this->MyTurbulenceGenerator->SubscribeToTurbulence(this);
+
+	GetOwner()->OnDestroyed.AddDynamic(this, &UTurbulenceReciever::OnParentDestroyed);
 	
 	// ...
 	
@@ -67,6 +70,13 @@ void UTurbulenceReciever::ApplyTurbulence(float DeltaTime, const FVector& Turbul
 		PrimitiveComponent->AddForce(TurbulenceVector * DeltaTime * 5000 *PrimitiveComponent->GetMass());
 	}
 }
+
+void UTurbulenceReciever::OnParentDestroyed(AActor* DestroyedActor)
+{
+	if(MyTurbulenceGenerator)
+		MyTurbulenceGenerator->UnsubscribeFromTurbulence(this);
+}
+
 
 
 

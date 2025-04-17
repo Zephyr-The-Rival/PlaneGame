@@ -22,6 +22,7 @@ public:
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
+	
 
 public:
 	// Called every frame
@@ -35,5 +36,9 @@ public:
 	void ApplyTurbulence(float DeltaTime, const FVector& TurbulenceVector);
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bActive=true;
+
+private:
+	UFUNCTION()
+	void OnParentDestroyed(AActor* DestroyedActor);
 
 };

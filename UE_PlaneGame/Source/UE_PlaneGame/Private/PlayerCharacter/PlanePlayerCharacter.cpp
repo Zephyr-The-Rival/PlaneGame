@@ -136,7 +136,7 @@ void APlanePlayerCharacter::MoveHand(const FInputActionValue& Value)
 
 	FVector PredictedPosition=PlayerHandCA->GetRelativeLocation()+MovementVector;
 	PredictedPosition*=FVector(0,1,1);//ignore Depth
-	Debug::Print("Hand distance to center: "+ FString::SanitizeFloat(PredictedPosition.Length()),GetWorld()->DeltaTimeSeconds);
+	//Debug::Print("Hand distance to center: "+ FString::SanitizeFloat(PredictedPosition.Length()),GetWorld()->DeltaTimeSeconds);
 	if(PredictedPosition.Length()<this->CameraMoveDistanceThreshold)
 	{
 		this->PlayerHandCA->AddRelativeLocation(MovementVector);
