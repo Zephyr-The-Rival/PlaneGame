@@ -2,7 +2,7 @@
 
 
 #include "Items/WorldItem.h"
-
+#include "UtilityActors/Turbulence/TurbulenceReciever.h"
 
 // Sets default values
 AWorldItem::AWorldItem()
@@ -16,12 +16,41 @@ AWorldItem::AWorldItem()
 void AWorldItem::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	OnPickedUp_Server.AddDynamic(this, &AWorldItem::MC_OnPickedUp);
+	OnDropped_Server.AddDynamic(this,&AWorldItem::MC_OnDropped);
 }
 
 // Called every frame
 void AWorldItem::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+}
+
+void AWorldItem::MC_OnPickedUp_Implementation()
+{
+	if(UPrimitiveComponent* PhysicsComponent=Cast<UPrimitiveComponent>(this->GetRootComponent()))
+	{
+		PhysicsComponent->SetSimulatePhysics(false);
+		PhysicsComponent->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
+	}
+	
+	if(this->TurbulenceReciever)
+	{
+		this->TurbulenceReciever->bActive=false;
+	}
+}
+
+void AWorldItem::MC_OnDropped_Implementation()
+{
+	if(UPrimitiveComponent* PhysicsComponent=Cast<UPrimitiveComponent>(this->GetRootComponent()))
+	{
+		PhysicsComponent->SetSimulatePhysics(true);
+		PhysicsComponent->SetCollisionEnabled(ECollisionEnabled::Type::QueryAndPhysics);
+	}
+	if(this->TurbulenceReciever)
+	{
+		this->TurbulenceReciever->bActive=true;
+	}
 }
 

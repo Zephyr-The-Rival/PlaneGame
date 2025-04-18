@@ -14,6 +14,7 @@
 #include "IGrabHandleActor.h"
 #include "Items/Tool.h"
 #include "Items/WorldItem.h"
+#include "Net/UnrealNetwork.h"
 #include "PlayerCharacter/PlayerHand.h"
 
 
@@ -74,6 +75,12 @@ void APlanePlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 	EIC->BindAction(ToggleHandMovementAction, ETriggerEvent::Started, this, &APlanePlayerCharacter::ActivateHandMovement);
 	EIC->BindAction(ToggleHandMovementAction, ETriggerEvent::Completed, this, &APlanePlayerCharacter::DeactivateHandMovement);
 	
+}
+
+void APlanePlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(APlanePlayerCharacter, R_CurrentyHeldWorldItem);
 }
 
 APlayerHand* APlanePlayerCharacter::GetPlayerHand()
@@ -186,9 +193,9 @@ void APlanePlayerCharacter::ActivateHandMovement()
 void APlanePlayerCharacter::DeactivateHandMovement()
 {
 	this->bMovingHand=false;
-	if (CurrentyHeldWorldItem)
+	if (R_CurrentyHeldWorldItem)
 	{
-		ATool* Tool = Cast<ATool>(CurrentyHeldWorldItem);
+		ATool* Tool = Cast<ATool>(R_CurrentyHeldWorldItem);
 		if (Tool)
 		{
 			Tool->OnHandMovementStopped();
@@ -200,19 +207,25 @@ void APlanePlayerCharacter::DeactivateHandMovement()
 
 void APlanePlayerCharacter::Grab()
 {
-	if(CurrentyHeldWorldItem || CurrentGrabHandleActor)
-		LetGo();
+	//R_CurrentyHeldWorldItem gets set on server and is replicated so it works here.
+	if(R_CurrentyHeldWorldItem || CurrentGrabHandleActor)
+		Server_LetGo();
 	else
-		PickUp();
+	{
+		UObject* ItemToPickUp= this->GetPlayerHand()->GetOverlappingItem();
+		Server_PickUp(ItemToPickUp);
+	}
+		
 }
 
-void APlanePlayerCharacter::PickUp()
+void APlanePlayerCharacter::Server_PickUp_Implementation(UObject* ItemToPickUp)
 {
-	AWorldItem* OverlappingItem = this->GetPlayerHand()->GetOverlappingItem();
-	if (!OverlappingItem)
+	AWorldItem* WorldItemToPickUp = Cast<AWorldItem>(ItemToPickUp);
+	
+	if (!WorldItemToPickUp)
 		return;
-
-	GrabHandle = Cast<AGrabHandle>(OverlappingItem);
+	
+	GrabHandle = Cast<AGrabHandle>(WorldItemToPickUp);
 	
 	if (GrabHandle)
 	{
@@ -251,28 +264,15 @@ void APlanePlayerCharacter::PickUp()
 		EAttachmentRule::KeepWorld, // Scale
 		true // Weld simulated bodies
 		);
-
-		OverlappingItem->AttachToComponent(this->PlayerHandCA, AttachRules);
-		if(UPrimitiveComponent* PhysicsComponent=Cast<UPrimitiveComponent>(OverlappingItem->GetRootComponent()))
-		{
-			PhysicsComponent->SetSimulatePhysics(false);
-			PhysicsComponent->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
-		}
-		CurrentyHeldWorldItem=OverlappingItem;
-	
-		UTurbulenceReciever* TurbulenceReciever= Cast<UTurbulenceReciever>(CurrentyHeldWorldItem->GetComponentByClass(UTurbulenceReciever::StaticClass()));
-		if(TurbulenceReciever)
-		{
-			TurbulenceReciever->bActive=false;
-		}
+		
+		WorldItemToPickUp->AttachToComponent(this->PlayerHandCA, AttachRules);
+		R_CurrentyHeldWorldItem=WorldItemToPickUp;
+		R_CurrentyHeldWorldItem->OnPickedUp_Server.Broadcast(); 
 	}
 }
 
-void APlanePlayerCharacter::LetGo()
+void APlanePlayerCharacter::Server_LetGo_Implementation()
 {
-	if(!CurrentyHeldWorldItem && !CurrentGrabHandleActor)
-		return;
-
 	if(CurrentGrabHandleActor)
 	{
 		CurrentGrabHandleActor->Execute_OnHandReleased(GrabHandle->GetParentActor(),this->GetPlayerHand(),this);
@@ -282,20 +282,9 @@ void APlanePlayerCharacter::LetGo()
 	else
 	{
 		FDetachmentTransformRules DetachRules(EDetachmentRule::KeepWorld, true);
-		CurrentyHeldWorldItem->DetachFromActor(DetachRules);
-		if(UPrimitiveComponent* PhysicsComponent=Cast<UPrimitiveComponent>(CurrentyHeldWorldItem->GetRootComponent()))
-		{
-			PhysicsComponent->SetSimulatePhysics(true);
-			PhysicsComponent->SetCollisionEnabled(ECollisionEnabled::Type::QueryAndPhysics);
-		}
-	
-		UTurbulenceReciever* TurbulenceReciever= Cast<UTurbulenceReciever>(CurrentyHeldWorldItem->GetComponentByClass(UTurbulenceReciever::StaticClass()));
-		if(TurbulenceReciever)
-		{
-			TurbulenceReciever->bActive=true;
-		}
-	
-		CurrentyHeldWorldItem=nullptr;
+		R_CurrentyHeldWorldItem->DetachFromActor(DetachRules);
+		R_CurrentyHeldWorldItem->OnDropped_Server.Broadcast();
+		R_CurrentyHeldWorldItem=nullptr;
 	}
 }
 
@@ -307,9 +296,9 @@ void APlanePlayerCharacter::Server_Tick_MoveHandBack_Implementation()
 
 void APlanePlayerCharacter::NotifyToolHandMovement(const FVector& MovementVector)
 {
-	if (CurrentyHeldWorldItem)
+	if (R_CurrentyHeldWorldItem)
 	{
-		ATool* Tool = Cast<ATool>(CurrentyHeldWorldItem);
+		ATool* Tool = Cast<ATool>(R_CurrentyHeldWorldItem);
 		if (Tool)
 		{
 			Tool->OnHandMovement(MovementVector);
