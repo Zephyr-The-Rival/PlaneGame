@@ -34,9 +34,12 @@ public:
 	
 	UFUNCTION(Blueprintable)
 	void ApplyTurbulence(float DeltaTime, const FVector& TurbulenceVector);
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bActive=true;
 
+protected:
+	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 private:
 	UFUNCTION()
 	void OnParentDestroyed(AActor* DestroyedActor);

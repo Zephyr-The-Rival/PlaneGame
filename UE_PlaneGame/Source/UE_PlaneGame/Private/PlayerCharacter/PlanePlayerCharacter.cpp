@@ -47,8 +47,8 @@ void APlanePlayerCharacter::BeginPlay()
 void APlanePlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if(!bMovingHand)
-		Tick_MoveHandBack();
+	if(!bMovingHand && this->IsLocallyControlled())
+		Server_Tick_MoveHandBack();
 }
 
 // Called to bind functionality to input
@@ -69,8 +69,8 @@ void APlanePlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 	
 	EIC->BindAction(GrabAction, ETriggerEvent::Completed, this, &APlanePlayerCharacter::Grab);
 	
-	EIC->BindAction(HandMovementAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::MoveHand);
-	EIC->BindAction(HandTurnAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::TurnHand);
+	EIC->BindAction(HandMovementAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::Local_CalculateHandMovement);
+	EIC->BindAction(HandTurnAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::LocalCalculateHandRotation);
 	EIC->BindAction(ToggleHandMovementAction, ETriggerEvent::Started, this, &APlanePlayerCharacter::ActivateHandMovement);
 	EIC->BindAction(ToggleHandMovementAction, ETriggerEvent::Completed, this, &APlanePlayerCharacter::DeactivateHandMovement);
 	
@@ -125,7 +125,7 @@ void APlanePlayerCharacter::EndCrouch()
 	this->UnCrouch();
 }
 
-void APlanePlayerCharacter::MoveHand(const FInputActionValue& Value)
+void APlanePlayerCharacter::Local_CalculateHandMovement(const FInputActionValue& Value)
 {
 	FVector2D VectorValue = Value.Get<FVector2D>();
 
@@ -139,7 +139,8 @@ void APlanePlayerCharacter::MoveHand(const FInputActionValue& Value)
 	//Debug::Print("Hand distance to center: "+ FString::SanitizeFloat(PredictedPosition.Length()),GetWorld()->DeltaTimeSeconds);
 	if(PredictedPosition.Length()<this->CameraMoveDistanceThreshold)
 	{
-		this->PlayerHandCA->AddRelativeLocation(MovementVector);
+		//this->PlayerHandCA->AddRelativeLocation(MovementVector);
+		this->Server_ApplyHandMovement(MovementVector);
 		if (bHandIsMoving)
 		{
 			NotifyToolHandMovement(MovementVector);
@@ -157,11 +158,22 @@ void APlanePlayerCharacter::MoveHand(const FInputActionValue& Value)
 	
 }
 
-void APlanePlayerCharacter::TurnHand(const FInputActionValue& Value)
+void APlanePlayerCharacter::Server_ApplyHandMovement_Implementation(FVector Offset)
+{
+	this->PlayerHandCA->AddRelativeLocation(Offset);
+}
+
+void APlanePlayerCharacter::LocalCalculateHandRotation(const FInputActionValue& Value)
 {
 	float FValue=Value.Get<float>();
-	FRotator DeltaRotaion= FRotator(0,0,FValue*HandTurnSpeed*GetWorld()->DeltaTimeSeconds);
-	PlayerHandCA->AddLocalRotation(DeltaRotaion);
+	FRotator DeltaRotation= FRotator(0,0,FValue*HandTurnSpeed*GetWorld()->DeltaTimeSeconds);
+	this->Server_ApplyHandRotation(DeltaRotation);
+	
+}
+
+void APlanePlayerCharacter::Server_ApplyHandRotation_Implementation(const FRotator DeltaRotation)
+{
+	PlayerHandCA->AddLocalRotation(DeltaRotation);	
 }
 
 void APlanePlayerCharacter::ActivateHandMovement()
@@ -225,39 +237,10 @@ void APlanePlayerCharacter::PickUp()
 				break;
 			}
 		}
-
-		if(Grab == nullptr)
-		{
-			if (GEngine)
-				GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, "Couldn't find child actor component which spawned GrabHandle actor!");
-			return;
-		}
+		
 
 		CurrentGrabHandleActor = Cast<IIGrabHandleActor>(GrabHandle->GetParentActor());
 		CurrentGrabHandleActor->Execute_OnHandGrabbed(GrabHandle->GetParentActor(),this->GetPlayerHand(), this);
-
-		/*
-		FAttachmentTransformRules AttachRules(
-		EAttachmentRule::SnapToTarget, // Location
-		EAttachmentRule::KeepRelative, // Rotation
-		EAttachmentRule::KeepWorld, // Scale
-		false // Weld simulated bodies
-		);
-		
-		if(this->PlayerHandCA->AttachToComponent(Grab, AttachRules))
-		{
-			if (GEngine)
-				GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green, "Successfully attached to GrabHandle");
-
-			CurrentGrabHandleActor = Cast<IIGrabHandleActor>(GrabHandle->GetParentActor());
-			CurrentGrabHandleActor->Execute_OnHandGrabbed(GrabHandle->GetParentActor(),this->GetPlayerHand());
-		}
-		else
-		{
-			if (GEngine)
-				GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, "Attaching Player Hand to GrabHandle failed");
-		}
-		*/
 		
 	}
 	else
@@ -316,7 +299,8 @@ void APlanePlayerCharacter::LetGo()
 	}
 }
 
-void APlanePlayerCharacter::Tick_MoveHandBack()
+
+void APlanePlayerCharacter::Server_Tick_MoveHandBack_Implementation()
 {
 	this->PlayerHandCA->SetRelativeLocation(FMath::VInterpTo(this->PlayerHandCA->GetRelativeLocation(),this->OriginalHandPosition,GetWorld()->DeltaTimeSeconds,1));
 }
