@@ -4,13 +4,14 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Interactables/Interactable.h"
 #include "UtilityActors/Turbulence/TurbulenceReciever.h"
 #include "WorldItem.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FSimpleEvent);
 
 UCLASS()
-class UE_PLANEGAME_API AWorldItem : public AActor
+class UE_PLANEGAME_API AWorldItem : public AInteractable
 {
 	GENERATED_BODY()
 

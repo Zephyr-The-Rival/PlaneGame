@@ -3,17 +3,17 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Items/WorldItem.h"
-#include "GrabHandle.generated.h"
+#include "GameFramework/Actor.h"
+#include "Interactable.generated.h"
 
 UCLASS()
-class UE_PLANEGAME_API AGrabHandle : public AWorldItem
+class UE_PLANEGAME_API AInteractable : public AActor
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this actor's properties
-	AGrabHandle();
+	AInteractable();
 
 protected:
 	// Called when the game starts or when spawned

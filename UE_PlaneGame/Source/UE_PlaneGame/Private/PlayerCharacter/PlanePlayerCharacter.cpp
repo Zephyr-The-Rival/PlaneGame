@@ -7,13 +7,11 @@
 #include "PlayerCharacter/PlanePlayerController.h"
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
-#include "InputMappingContext.h"
 #include "InputActionValue.h"
 #include "Debug.h"
-#include "GrabHandle.h"
-#include "IGrabHandleActor.h"
-#include "Items/Tool.h"
-#include "Items/WorldItem.h"
+#include "Interactables/GrabHandle.h"
+#include "Interactables/Items/Tool.h"
+#include "Interactables/Items/WorldItem.h"
 #include "Net/UnrealNetwork.h"
 #include "PlayerCharacter/PlayerHand.h"
 
@@ -68,7 +66,7 @@ void APlanePlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 	EIC->BindAction(CrouchAction, ETriggerEvent::Started, this, &APlanePlayerCharacter::StartCrouch);
 	EIC->BindAction(CrouchAction, ETriggerEvent::Completed, this, &APlanePlayerCharacter::EndCrouch);
 	
-	EIC->BindAction(GrabAction, ETriggerEvent::Completed, this, &APlanePlayerCharacter::Grab);
+	EIC->BindAction(GrabAction, ETriggerEvent::Completed, this, &APlanePlayerCharacter::ToggleGrab);
 	
 	EIC->BindAction(HandMovementAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::Local_CalculateHandMovement);
 	EIC->BindAction(HandTurnAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::LocalCalculateHandRotation);
@@ -81,6 +79,7 @@ void APlanePlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(APlanePlayerCharacter, R_CurrentyHeldWorldItem);
+	DOREPLIFETIME(APlanePlayerCharacter, R_CurrentlyHeldGrabHandle);
 }
 
 APlayerHand* APlanePlayerCharacter::GetPlayerHand()
@@ -205,10 +204,10 @@ void APlanePlayerCharacter::DeactivateHandMovement()
 	this->AddMappingContext(MoveCameraMappingContext);
 }
 
-void APlanePlayerCharacter::Grab()
+void APlanePlayerCharacter::ToggleGrab()
 {
 	//R_CurrentyHeldWorldItem gets set on server and is replicated so it works here.
-	if(R_CurrentyHeldWorldItem || CurrentGrabHandleActor)
+	if(R_CurrentyHeldWorldItem || R_CurrentlyHeldGrabHandle)
 		Server_LetGo();
 	else
 	{
@@ -220,72 +219,68 @@ void APlanePlayerCharacter::Grab()
 
 void APlanePlayerCharacter::Server_PickUp_Implementation(UObject* ItemToPickUp)
 {
-	AWorldItem* WorldItemToPickUp = Cast<AWorldItem>(ItemToPickUp);
-	
-	if (!WorldItemToPickUp)
+	AGrabHandle* HandleToGrab= Cast<AGrabHandle>(ItemToPickUp);
+	if (HandleToGrab)
+	{
+		OnServerGrabHandle(HandleToGrab);
 		return;
-	
-	GrabHandle = Cast<AGrabHandle>(WorldItemToPickUp);
-	
-	if (GrabHandle)
-	{
-		// Check if parent actor has interface to define GrabHandle function
-		if(!GrabHandle->GetParentActor()->GetClass()->ImplementsInterface(UIGrabHandleActor::StaticClass() ))
-		{
-			if (GEngine)
-				GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, "Actor with GrabHandle actor doesn't implement the IGrabHandleActor interface");
-			return;
-		}
-		
-		// Check if detected actor is child actor of interact actor
-		UChildActorComponent* Grab = nullptr;
-		TArray<UChildActorComponent*> AttachedActors;
-		GrabHandle->GetParentActor()->GetComponents<UChildActorComponent>(AttachedActors);
-		
-		for (auto Element : AttachedActors)
-		{
-			if(Element->GetChildActor() == GrabHandle)
-			{
-				Grab = Element;
-				break;
-			}
-		}
-		
-
-		CurrentGrabHandleActor = Cast<IIGrabHandleActor>(GrabHandle->GetParentActor());
-		CurrentGrabHandleActor->Execute_OnHandGrabbed(GrabHandle->GetParentActor(),this->GetPlayerHand(), this);
-		
 	}
-	else
+	
+	AWorldItem* WorldItemToPickUp = Cast<AWorldItem>(ItemToPickUp);
+	if(WorldItemToPickUp)
 	{
-		FAttachmentTransformRules AttachRules(
+		this->OnServerPickUpItem(WorldItemToPickUp);
+		return;
+	}
+		
+}
+
+void APlanePlayerCharacter::Server_LetGo_Implementation()
+{
+	if(R_CurrentlyHeldGrabHandle)
+	{
+		this->OnServerLetHandleGo();
+		return;
+	}
+	if(R_CurrentyHeldWorldItem)
+	{
+		OnServerDropItem();
+		return;
+	}
+}
+
+void APlanePlayerCharacter::OnServerPickUpItem(AWorldItem* Item)
+{
+	FAttachmentTransformRules AttachRules(
 		EAttachmentRule::SnapToTarget, // Location
 		EAttachmentRule::SnapToTarget, // Rotation
 		EAttachmentRule::KeepWorld, // Scale
 		true // Weld simulated bodies
 		);
 		
-		WorldItemToPickUp->AttachToComponent(this->PlayerHandCA, AttachRules);
-		R_CurrentyHeldWorldItem=WorldItemToPickUp;
-		R_CurrentyHeldWorldItem->OnPickedUp_Server.Broadcast(); 
-	}
+	Item->AttachToComponent(this->PlayerHandCA, AttachRules);
+	R_CurrentyHeldWorldItem=Item;
+	R_CurrentyHeldWorldItem->OnPickedUp_Server.Broadcast(); 
 }
 
-void APlanePlayerCharacter::Server_LetGo_Implementation()
+void APlanePlayerCharacter::OnServerGrabHandle(AGrabHandle* Handle)
 {
-	if(CurrentGrabHandleActor)
-	{
-		CurrentGrabHandleActor->Execute_OnHandReleased(GrabHandle->GetParentActor(),this->GetPlayerHand(),this);
-		CurrentGrabHandleActor=nullptr;
-		GrabHandle=nullptr;
-	}
-	else
-	{
-		FDetachmentTransformRules DetachRules(EDetachmentRule::KeepWorld, true);
-		R_CurrentyHeldWorldItem->DetachFromActor(DetachRules);
-		R_CurrentyHeldWorldItem->OnDropped_Server.Broadcast();
-		R_CurrentyHeldWorldItem=nullptr;
-	}
+	R_CurrentlyHeldGrabHandle = Handle;
+	R_CurrentlyHeldGrabHandle->OnGrabbed.Broadcast(this->GetPlayerHand(), this);
+}
+
+void APlanePlayerCharacter::OnServerDropItem()
+{
+	FDetachmentTransformRules DetachRules(EDetachmentRule::KeepWorld, true);
+	R_CurrentyHeldWorldItem->DetachFromActor(DetachRules);
+	R_CurrentyHeldWorldItem->OnDropped_Server.Broadcast();
+	R_CurrentyHeldWorldItem=nullptr;
+}
+
+void APlanePlayerCharacter::OnServerLetHandleGo()
+{
+	R_CurrentlyHeldGrabHandle->OnLetGo.Broadcast(this->GetPlayerHand(), this);
+	R_CurrentlyHeldGrabHandle=nullptr;
 }
 
 

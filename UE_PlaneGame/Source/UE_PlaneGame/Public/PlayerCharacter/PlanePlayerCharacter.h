@@ -3,8 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GrabHandle.h"
-#include "IGrabHandleActor.h"
+#include "Interactables/GrabHandle.h"
 #include "GameFramework/Character.h"
 #include "PlanePlayerCharacter.generated.h"
 
@@ -129,7 +128,7 @@ private:
 	void ActivateHandMovement();
 	void DeactivateHandMovement();
 	
-	void Grab();
+	void ToggleGrab();
 	
 	UFUNCTION(Server,Reliable)
 	void Server_PickUp(UObject* ItemToPickUp);
@@ -138,13 +137,19 @@ private:
 	UFUNCTION(Server,Reliable)
 	void Server_LetGo();
 	void Server_LetGo_Implementation();
+
+	void OnServerPickUpItem(AWorldItem* Item);
+	void OnServerGrabHandle(AGrabHandle* Handle);
+
+	void OnServerDropItem();
+	void OnServerLetHandleGo();
+
 	
 	UPROPERTY(Replicated)
 	AWorldItem* R_CurrentyHeldWorldItem=nullptr;
-	
-	IIGrabHandleActor* CurrentGrabHandleActor=nullptr;
-	
-	AGrabHandle* GrabHandle =nullptr;
+
+	UPROPERTY(Replicated)
+	AGrabHandle* R_CurrentlyHeldGrabHandle =nullptr;
 
 	//for moving hand back
 	bool bMovingHand=false;

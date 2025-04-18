@@ -1,7 +1,7 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Items/WorldItem.h"
+#include "Interactables/Items/WorldItem.h"
 #include "UtilityActors/Turbulence/TurbulenceReciever.h"
 
 // Sets default values

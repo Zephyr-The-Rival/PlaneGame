@@ -2,9 +2,9 @@
 
 
 #include "PlayerCharacter/PlayerHand.h"
-
+#include "Interactables/Interactable.h"
 #include "Components/SphereComponent.h"
-#include "Items/WorldItem.h"
+#include "Interactables/Items/WorldItem.h"
 
 
 // Sets default values
@@ -31,17 +31,17 @@ void APlayerHand::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-AWorldItem* APlayerHand::GetOverlappingItem()
+AInteractable* APlayerHand::GetOverlappingItem()
 {
 	TArray<AActor*> OverlappingActors;
 	HandCollision->GetOverlappingActors(OverlappingActors);
 
 	for (AActor* Actor : OverlappingActors)
 	{
-		AWorldItem* Item = Cast<AWorldItem>(Actor);
-		if (Item)
+		AInteractable* Interactable = Cast<AInteractable>(Actor);
+		if (Interactable)
 		{
-			return Item;
+			return Interactable;
 		}
 	}
 	return nullptr;

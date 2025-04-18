@@ -8,7 +8,7 @@
 
 class AWorldItem;
 class USphereComponent;
-
+class AInteractable;
 UCLASS()
 class UE_PLANEGAME_API APlayerHand : public AActor
 {
@@ -33,5 +33,5 @@ protected:
 	USphereComponent* HandCollision;
 
 public:
-	AWorldItem* GetOverlappingItem();
+	AInteractable* GetOverlappingItem();
 };
