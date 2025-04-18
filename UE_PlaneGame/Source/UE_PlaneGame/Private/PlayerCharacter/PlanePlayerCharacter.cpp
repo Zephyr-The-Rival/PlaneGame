@@ -47,8 +47,8 @@ void APlanePlayerCharacter::BeginPlay()
 void APlanePlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if(!bMovingHand)
-		Tick_MoveHandBack();
+	if(!bMovingHand && this->IsLocallyControlled())
+		Server_Tick_MoveHandBack();
 }
 
 // Called to bind functionality to input
@@ -237,39 +237,10 @@ void APlanePlayerCharacter::PickUp()
 				break;
 			}
 		}
-
-		if(Grab == nullptr)
-		{
-			if (GEngine)
-				GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, "Couldn't find child actor component which spawned GrabHandle actor!");
-			return;
-		}
+		
 
 		CurrentGrabHandleActor = Cast<IIGrabHandleActor>(GrabHandle->GetParentActor());
 		CurrentGrabHandleActor->Execute_OnHandGrabbed(GrabHandle->GetParentActor(),this->GetPlayerHand(), this);
-
-		/*
-		FAttachmentTransformRules AttachRules(
-		EAttachmentRule::SnapToTarget, // Location
-		EAttachmentRule::KeepRelative, // Rotation
-		EAttachmentRule::KeepWorld, // Scale
-		false // Weld simulated bodies
-		);
-		
-		if(this->PlayerHandCA->AttachToComponent(Grab, AttachRules))
-		{
-			if (GEngine)
-				GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green, "Successfully attached to GrabHandle");
-
-			CurrentGrabHandleActor = Cast<IIGrabHandleActor>(GrabHandle->GetParentActor());
-			CurrentGrabHandleActor->Execute_OnHandGrabbed(GrabHandle->GetParentActor(),this->GetPlayerHand());
-		}
-		else
-		{
-			if (GEngine)
-				GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, "Attaching Player Hand to GrabHandle failed");
-		}
-		*/
 		
 	}
 	else
@@ -328,7 +299,8 @@ void APlanePlayerCharacter::LetGo()
 	}
 }
 
-void APlanePlayerCharacter::Tick_MoveHandBack()
+
+void APlanePlayerCharacter::Server_Tick_MoveHandBack_Implementation()
 {
 	this->PlayerHandCA->SetRelativeLocation(FMath::VInterpTo(this->PlayerHandCA->GetRelativeLocation(),this->OriginalHandPosition,GetWorld()->DeltaTimeSeconds,1));
 }

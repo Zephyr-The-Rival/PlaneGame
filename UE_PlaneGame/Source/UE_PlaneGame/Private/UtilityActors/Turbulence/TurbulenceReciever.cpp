@@ -5,6 +5,7 @@
 
 #include "ComponentUtils.h"
 #include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
 #include "PlayerCharacter/PlanePlayerCharacter.h"
 #include "UtilityActors/Turbulence/TurbulenceGenerator.h"
 
@@ -66,6 +67,12 @@ void UTurbulenceReciever::ApplyTurbulence(float DeltaTime, const FVector& Turbul
 		//PrimitiveComponent->AddWorldOffset(TurbulenceVector*DeltaTime);
 		PrimitiveComponent->AddForce(TurbulenceVector * DeltaTime * 5000 *PrimitiveComponent->GetMass());
 	}
+}
+
+void UTurbulenceReciever::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(UTurbulenceReciever, bActive);
 }
 
 

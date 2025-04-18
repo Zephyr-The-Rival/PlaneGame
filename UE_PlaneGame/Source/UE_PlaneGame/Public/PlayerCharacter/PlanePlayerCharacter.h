@@ -137,8 +137,11 @@ private:
 
 	//for moving hand back
 	bool bMovingHand=false;
+
+	UFUNCTION(Server, Unreliable)
+	void Server_Tick_MoveHandBack();
+	void Server_Tick_MoveHandBack_Implementation();
 	
-	void Tick_MoveHandBack();
 	
 	void NotifyToolHandMovement(const FVector& MovementVector);
 	
