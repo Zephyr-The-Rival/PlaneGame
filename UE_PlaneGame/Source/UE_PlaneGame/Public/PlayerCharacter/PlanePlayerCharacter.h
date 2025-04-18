@@ -109,9 +109,21 @@ private:
 	void StartCrouch();
 	void EndCrouch();
 
+
+	
 	//Hand Movement
-	void MoveHand(const FInputActionValue& Value);
-	void TurnHand(const FInputActionValue& Value);
+	
+	void Local_CalculateHandMovement(const FInputActionValue& Value);
+
+	UFUNCTION(Server, Unreliable)
+	void Server_ApplyHandMovement(FVector Offset);
+	void Server_ApplyHandMovement_Implementation(FVector Offset);
+	
+	void LocalCalculateHandRotation(const FInputActionValue& Value);
+
+	UFUNCTION(Server, Unreliable)
+	void Server_ApplyHandRotation(FRotator DeltaRotation);
+	void Server_ApplyHandRotation_Implementation(FRotator DeltaRotation);
 	
 	void ActivateHandMovement();
 	void DeactivateHandMovement();
