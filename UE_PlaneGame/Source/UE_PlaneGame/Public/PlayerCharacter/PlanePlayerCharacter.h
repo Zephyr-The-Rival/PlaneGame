@@ -3,6 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GrabHandle.h"
+#include "IGrabHandleActor.h"
 #include "GameFramework/Character.h"
 #include "PlanePlayerCharacter.generated.h"
 
@@ -107,9 +109,21 @@ private:
 	void StartCrouch();
 	void EndCrouch();
 
+
+	
 	//Hand Movement
-	void MoveHand(const FInputActionValue& Value);
-	void TurnHand(const FInputActionValue& Value);
+	
+	void Local_CalculateHandMovement(const FInputActionValue& Value);
+
+	UFUNCTION(Server, Unreliable)
+	void Server_ApplyHandMovement(FVector Offset);
+	void Server_ApplyHandMovement_Implementation(FVector Offset);
+	
+	void LocalCalculateHandRotation(const FInputActionValue& Value);
+
+	UFUNCTION(Server, Unreliable)
+	void Server_ApplyHandRotation(FRotator DeltaRotation);
+	void Server_ApplyHandRotation_Implementation(FRotator DeltaRotation);
 	
 	void ActivateHandMovement();
 	void DeactivateHandMovement();
@@ -118,11 +132,18 @@ private:
 	void PickUp();
 	void LetGo();
 	AWorldItem* CurrentyHeldWorldItem=nullptr;
+	IIGrabHandleActor* CurrentGrabHandleActor=nullptr;
+	AGrabHandle* GrabHandle =nullptr;
 
 	//for moving hand back
 	bool bMovingHand=false;
+
+	UFUNCTION(Server, Unreliable)
+	void Server_Tick_MoveHandBack();
+	void Server_Tick_MoveHandBack_Implementation();
 	
-	void Tick_MoveHandBack();
+	
+	void NotifyToolHandMovement(const FVector& MovementVector);
 	
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Input|Action|Move")

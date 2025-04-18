@@ -39,7 +39,7 @@ void ATurbulenceGenerator::Tick(float DeltaTime)
 	TargetValue *= TurbulenceStrength;
 
 	TurbulenceValue = TargetValue;
-
+	
 	if(this->bActive)
 		BrodcastTurbulence();
 }
@@ -71,6 +71,11 @@ void ATurbulenceGenerator::BrodcastTurbulence()
 void ATurbulenceGenerator::SubscribeToTurbulence(UTurbulenceReciever* RecieverToAdd)
 {
 	this->AllTurbulenceRecievers.Add(RecieverToAdd);
+}
+
+void ATurbulenceGenerator::UnsubscribeFromTurbulence(UTurbulenceReciever* RecieverToRemove)
+{
+	this->AllTurbulenceRecievers.Remove(RecieverToRemove);
 }
 
 

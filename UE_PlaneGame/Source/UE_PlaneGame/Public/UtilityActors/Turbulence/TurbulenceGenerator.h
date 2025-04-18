@@ -58,6 +58,8 @@ private:
 public:
 	TArray<UTurbulenceReciever*> AllTurbulenceRecievers= TArray<UTurbulenceReciever*>();
 	void SubscribeToTurbulence(UTurbulenceReciever* RecieverToAdd);
+	
+	void UnsubscribeFromTurbulence(UTurbulenceReciever* RecieverToRemove);
 
 	
 private:
