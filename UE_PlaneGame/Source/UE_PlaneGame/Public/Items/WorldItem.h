@@ -7,6 +7,8 @@
 #include "UtilityActors/Turbulence/TurbulenceReciever.h"
 #include "WorldItem.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FSimpleEvent);
+
 UCLASS()
 class UE_PLANEGAME_API AWorldItem : public AActor
 {
@@ -26,4 +28,21 @@ public:
 public:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	UTurbulenceReciever* TurbulenceReciever;
+
+	UPROPERTY(BlueprintAssignable)
+	FSimpleEvent OnPickedUp_Server;
+	
+	UPROPERTY(BlueprintAssignable)
+	FSimpleEvent OnDropped_Server;
+private:
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MC_OnPickedUp();
+	void MC_OnPickedUp_Implementation();
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void MC_OnDropped();
+	void MC_OnDropped_Implementation();
+
+	
 };

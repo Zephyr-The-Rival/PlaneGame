@@ -43,6 +43,7 @@ public:
 
 protected:
 	APlanePlayerController* MyPlayerController;
+	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
 //Components
 	
@@ -127,12 +128,22 @@ private:
 	
 	void ActivateHandMovement();
 	void DeactivateHandMovement();
-
+	
 	void Grab();
-	void PickUp();
-	void LetGo();
-	AWorldItem* CurrentyHeldWorldItem=nullptr;
+	
+	UFUNCTION(Server,Reliable)
+	void Server_PickUp(UObject* ItemToPickUp);
+	void Server_PickUp_Implementation(UObject* ItemToPickUp);
+	
+	UFUNCTION(Server,Reliable)
+	void Server_LetGo();
+	void Server_LetGo_Implementation();
+	
+	UPROPERTY(Replicated)
+	AWorldItem* R_CurrentyHeldWorldItem=nullptr;
+	
 	IIGrabHandleActor* CurrentGrabHandleActor=nullptr;
+	
 	AGrabHandle* GrabHandle =nullptr;
 
 	//for moving hand back
