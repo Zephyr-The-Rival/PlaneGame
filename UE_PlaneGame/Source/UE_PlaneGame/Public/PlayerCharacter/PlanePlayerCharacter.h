@@ -48,6 +48,10 @@ protected:
 	
 	UPROPERTY(EditAnywhere, Category = "Camera", BlueprintReadOnly)
 	UCameraComponent* FirstPersonCamera;
+public:
+	UCameraComponent* GetCamera() const {return this->FirstPersonCamera;}
+protected:
+	
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	UChildActorComponent* PlayerHandCA;

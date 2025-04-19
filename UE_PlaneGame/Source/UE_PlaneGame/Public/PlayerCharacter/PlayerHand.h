@@ -6,6 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "PlayerHand.generated.h"
 
+class APlanePlayerCharacter;
+class UCameraComponent;
 class AWorldItem;
 class USphereComponent;
 class AInteractable;
@@ -28,10 +30,20 @@ public:
 
 protected:
 	
-
+	 UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	 USceneComponent* Target;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	USphereComponent* HandCollision;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	APlanePlayerCharacter* MyOwningPlayer;
+
 public:
 	AInteractable* GetOverlappingItem();
+
+private:
+	UCameraComponent* OwningPlayerCamera;
+
+	void Tick_SetCollisionPosition();
 };
