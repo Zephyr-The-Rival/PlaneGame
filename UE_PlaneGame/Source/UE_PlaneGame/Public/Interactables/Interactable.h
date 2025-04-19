@@ -4,17 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "UtilityActors/Turbulence/TurbulenceReciever.h"
-#include "WorldItem.generated.h"
+#include "Interactable.generated.h"
 
 UCLASS()
-class UE_PLANEGAME_API AWorldItem : public AActor
+class UE_PLANEGAME_API AInteractable : public AActor
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this actor's properties
-	AWorldItem();
+	AInteractable();
 
 protected:
 	// Called when the game starts or when spawned
@@ -23,7 +22,4 @@ protected:
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-public:
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-	UTurbulenceReciever* TurbulenceReciever;
 };

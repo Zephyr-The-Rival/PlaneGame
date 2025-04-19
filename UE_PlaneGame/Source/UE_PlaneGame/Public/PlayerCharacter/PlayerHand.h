@@ -6,9 +6,11 @@
 #include "GameFramework/Actor.h"
 #include "PlayerHand.generated.h"
 
+class APlanePlayerCharacter;
+class UCameraComponent;
 class AWorldItem;
 class USphereComponent;
-
+class AInteractable;
 UCLASS()
 class UE_PLANEGAME_API APlayerHand : public AActor
 {
@@ -28,10 +30,20 @@ public:
 
 protected:
 	
-
+	 UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	 USceneComponent* Target;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	USphereComponent* HandCollision;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	APlanePlayerCharacter* MyOwningPlayer;
+
 public:
-	AWorldItem* GetOverlappingItem();
+	AInteractable* GetOverlappingInteractable();
+
+private:
+	UCameraComponent* OwningPlayerCamera;
+
+	void Tick_SetCollisionPosition();
 };

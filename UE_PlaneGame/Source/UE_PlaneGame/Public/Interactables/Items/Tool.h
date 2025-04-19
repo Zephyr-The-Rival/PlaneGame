@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Items/WorldItem.h"
+#include "Interactables/Items/WorldItem.h"
 #include "Tool.generated.h"
 
 UCLASS()

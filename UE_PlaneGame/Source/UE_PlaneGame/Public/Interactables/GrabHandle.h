@@ -3,11 +3,18 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Items/WorldItem.h"
+#include "Interactable.h"
+#include "Interactables/Interactable.h"
 #include "GrabHandle.generated.h"
 
+class APlayerHand;
+class APlanePlayerCharacter;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FGrabEvent, APlayerHand*, Hand, APlanePlayerCharacter*, PlayerCharacter);
+
+
 UCLASS()
-class UE_PLANEGAME_API AGrabHandle : public AWorldItem
+class UE_PLANEGAME_API AGrabHandle : public AInteractable
 {
 	GENERATED_BODY()
 
@@ -22,4 +29,10 @@ protected:
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
+	UPROPERTY(BlueprintAssignable)
+	FGrabEvent OnGrabbed;
+	
+	UPROPERTY(BlueprintAssignable)
+	FGrabEvent OnLetGo;
 };

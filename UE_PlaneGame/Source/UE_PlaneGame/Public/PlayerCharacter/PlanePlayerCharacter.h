@@ -3,12 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GrabHandle.h"
-#include "IGrabHandleActor.h"
+#include "Interactables/GrabHandle.h"
 #include "GameFramework/Character.h"
 #include "PlanePlayerCharacter.generated.h"
 
 
+class AWorldButton;
 class UTurbulenceReciever;
 class APlayerHand;
 class AWorldItem;
@@ -43,11 +43,16 @@ public:
 
 protected:
 	APlanePlayerController* MyPlayerController;
+	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
 //Components
 	
 	UPROPERTY(EditAnywhere, Category = "Camera", BlueprintReadOnly)
 	UCameraComponent* FirstPersonCamera;
+public:
+	UCameraComponent* GetCamera() const {return this->FirstPersonCamera;}
+protected:
+	
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	UChildActorComponent* PlayerHandCA;
@@ -93,10 +98,13 @@ protected:
 	UInputAction* HandTurnAction;
 
 	UPROPERTY(EditAnywhere, Category = "Input|Action")
-	UInputAction* GrabAction;
+	UInputAction* InteractAction;
 
 	UPROPERTY(EditAnywhere, Category = "Input|Action")
 	UInputAction* CrouchAction;
+
+	UPROPERTY(EditAnywhere, Category = "Input|Action")
+	UInputAction* ThrowAction;
 
 	//process input
 
@@ -128,13 +136,37 @@ private:
 	void ActivateHandMovement();
 	void DeactivateHandMovement();
 
-	void Grab();
-	void PickUp();
-	void LetGo();
-	AWorldItem* CurrentyHeldWorldItem=nullptr;
-	IIGrabHandleActor* CurrentGrabHandleActor=nullptr;
-	AGrabHandle* GrabHandle =nullptr;
+	//Interact
+	
+	//Grab and let go 
+	void ToggleGrab();
+	
+	UFUNCTION(Server,Reliable)
+	void Server_Interact(UObject* ItemToPickUp);
+	void Server_Interact_Implementation(UObject* ItemToPickUp);
+	
+	UFUNCTION(Server,Reliable)
+	void Server_LetGo();
+	void Server_LetGo_Implementation();
 
+	void OnServerPickUpItem(AWorldItem* Item);
+	void OnServerGrabHandle(AGrabHandle* Handle);
+
+	void OnServerDropItem();
+	void OnServerLetHandleGo();
+
+	
+	UPROPERTY(Replicated)
+	AWorldItem* R_CurrentyHeldWorldItem=nullptr;
+
+	UPROPERTY(Replicated)
+	AGrabHandle* R_CurrentlyHeldGrabHandle =nullptr;
+
+
+	UFUNCTION(Server,Reliable)
+	void Server_PressButton(AWorldButton* ButtonToPress);
+	void Server_PressButton_Implementation(AWorldButton* ButtonToPress);
+	
 	//for moving hand back
 	bool bMovingHand=false;
 
@@ -144,6 +176,19 @@ private:
 	
 	
 	void NotifyToolHandMovement(const FVector& MovementVector);
+
+
+	//Throw
+	void StartThrow();
+	
+	UFUNCTION(Server, Reliable)
+	void Server_Throw(FVector ThrowVector);
+	void Server_Throw_Implementation(FVector ThrowVector);
+
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float ThrowStrength=10000;
+	
 	
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Input|Action|Move")

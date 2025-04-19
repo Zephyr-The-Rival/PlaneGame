@@ -1,6 +1,6 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
-#include "Items/Tool.h"
+#include "Interactables/Items/Tool.h"
 
 ATool::ATool(): LastMovementDirection()
 {
