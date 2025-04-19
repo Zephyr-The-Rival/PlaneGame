@@ -38,7 +38,7 @@ void APlayerHand::Tick(float DeltaTime)
 	Tick_SetCollisionPosition();
 }
 
-AInteractable* APlayerHand::GetOverlappingItem()
+AInteractable* APlayerHand::GetOverlappingInteractable()
 {
 	TArray<AActor*> OverlappingActors;
 	HandCollision->GetOverlappingActors(OverlappingActors);

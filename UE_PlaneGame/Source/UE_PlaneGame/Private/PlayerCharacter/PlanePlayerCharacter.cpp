@@ -11,6 +11,7 @@
 #include "Debug.h"
 #include "IDetailTreeNode.h"
 #include "Interactables/GrabHandle.h"
+#include "Interactables/WorldButton.h"
 #include "Interactables/Items/Tool.h"
 #include "Interactables/Items/WorldItem.h"
 #include "Net/UnrealNetwork.h"
@@ -67,7 +68,7 @@ void APlanePlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 	EIC->BindAction(CrouchAction, ETriggerEvent::Started, this, &APlanePlayerCharacter::StartCrouch);
 	EIC->BindAction(CrouchAction, ETriggerEvent::Completed, this, &APlanePlayerCharacter::EndCrouch);
 	
-	EIC->BindAction(GrabAction, ETriggerEvent::Completed, this, &APlanePlayerCharacter::ToggleGrab);
+	EIC->BindAction(InteractAction, ETriggerEvent::Completed, this, &APlanePlayerCharacter::ToggleGrab);
 	
 	EIC->BindAction(HandMovementAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::Local_CalculateHandMovement);
 	EIC->BindAction(HandTurnAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::LocalCalculateHandRotation);
@@ -214,13 +215,19 @@ void APlanePlayerCharacter::ToggleGrab()
 		Server_LetGo();
 	else
 	{
-		UObject* ItemToPickUp= this->GetPlayerHand()->GetOverlappingItem();
-		Server_PickUp(ItemToPickUp);
+		
+		UObject* Interactable= this->GetPlayerHand()->GetOverlappingInteractable();
+		if (AWorldButton* Button = Cast<AWorldButton>(Interactable))
+		{
+			this->Server_PressButton(Button);
+		}
+		else
+			Server_Interact(Interactable);
 	}
 		
 }
 
-void APlanePlayerCharacter::Server_PickUp_Implementation(UObject* ItemToPickUp)
+void APlanePlayerCharacter::Server_Interact_Implementation(UObject* ItemToPickUp)
 {
 	AGrabHandle* HandleToGrab= Cast<AGrabHandle>(ItemToPickUp);
 	if (HandleToGrab)
@@ -286,6 +293,11 @@ void APlanePlayerCharacter::OnServerLetHandleGo()
 	R_CurrentlyHeldGrabHandle=nullptr;
 }
 
+
+void APlanePlayerCharacter::Server_PressButton_Implementation(AWorldButton* ButtonToPress)
+{
+	ButtonToPress->Press(this);
+}
 
 void APlanePlayerCharacter::Server_Tick_MoveHandBack_Implementation()
 {
