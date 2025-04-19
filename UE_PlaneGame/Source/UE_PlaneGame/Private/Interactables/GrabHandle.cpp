@@ -3,6 +3,8 @@
 
 #include "Interactables/GrabHandle.h"
 
+#include "PlayerCharacter/PlanePlayerCharacter.h"
+
 
 // Sets default values
 AGrabHandle::AGrabHandle()
@@ -22,5 +24,11 @@ void AGrabHandle::BeginPlay()
 void AGrabHandle::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+}
+
+void AGrabHandle::Interact_Implementation(APlanePlayerCharacter* InteractingPlayer)
+{
+	Super::Interact_Implementation(InteractingPlayer);
+	InteractingPlayer->ServerGrabHandle(this);
 }
 

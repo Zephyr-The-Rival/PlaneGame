@@ -137,23 +137,34 @@ private:
 	void DeactivateHandMovement();
 
 	//Interact
+
+	void Interact();
+	//Grab and let go
+	void SingleInteract(AInteractable* Interactable);
+	void HoldInteract_Start(AInteractable* Interactable);
+	void HoldInteract_End();
+
+	AInteractable* CurrentHoldInteractable;
 	
-	//Grab and let go 
-	void ToggleGrab();
-	
-	UFUNCTION(Server,Reliable)
-	void Server_Interact(UObject* ItemToPickUp);
-	void Server_Interact_Implementation(UObject* ItemToPickUp);
 	
 	UFUNCTION(Server,Reliable)
 	void Server_LetGo();
 	void Server_LetGo_Implementation();
 
-	void OnServerPickUpItem(AWorldItem* Item);
-	void OnServerGrabHandle(AGrabHandle* Handle);
+public:
+	UFUNCTION(Server, Reliable)
+	void ServerPickUpItem(AWorldItem* Item);
+	void ServerPickUpItem_Implementation(AWorldItem* Item);
 
+public:
+	UFUNCTION(Server,Reliable)
+	void ServerGrabHandle(AGrabHandle* Handle);
+	void ServerGrabHandle_Implementation(AGrabHandle* Handle);
+
+private:	
 	void OnServerDropItem();
 	void OnServerLetHandleGo();
+
 
 	
 	UPROPERTY(Replicated)

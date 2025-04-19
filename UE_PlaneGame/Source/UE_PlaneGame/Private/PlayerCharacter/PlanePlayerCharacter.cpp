@@ -68,7 +68,8 @@ void APlanePlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 	EIC->BindAction(CrouchAction, ETriggerEvent::Started, this, &APlanePlayerCharacter::StartCrouch);
 	EIC->BindAction(CrouchAction, ETriggerEvent::Completed, this, &APlanePlayerCharacter::EndCrouch);
 	
-	EIC->BindAction(InteractAction, ETriggerEvent::Completed, this, &APlanePlayerCharacter::ToggleGrab);
+	EIC->BindAction(InteractAction, ETriggerEvent::Started, this, &APlanePlayerCharacter::Interact);
+	EIC->BindAction(InteractAction, ETriggerEvent::Completed, this, &APlanePlayerCharacter::HoldInteract_End);
 	
 	EIC->BindAction(HandMovementAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::Local_CalculateHandMovement);
 	EIC->BindAction(HandTurnAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::LocalCalculateHandRotation);
@@ -208,42 +209,51 @@ void APlanePlayerCharacter::DeactivateHandMovement()
 	this->AddMappingContext(MoveCameraMappingContext);
 }
 
-void APlanePlayerCharacter::ToggleGrab()
+void APlanePlayerCharacter::Interact()
 {
+	//When interact action starts
+	//runs locally on controlled player
 	//R_CurrentyHeldWorldItem gets set on server and is replicated so it works here.
-	if(R_CurrentyHeldWorldItem || R_CurrentlyHeldGrabHandle)
-		Server_LetGo();
-	else
+	if (R_CurrentyHeldWorldItem || R_CurrentlyHeldGrabHandle)
 	{
-		
-		UObject* Interactable= this->GetPlayerHand()->GetOverlappingInteractable();
-		if (AWorldButton* Button = Cast<AWorldButton>(Interactable))
-		{
-			this->Server_PressButton(Button);
-		}
-		else
-			Server_Interact(Interactable);
+		Server_LetGo();
+		return;
 	}
-		
+
+	UObject* InteractableObject = this->GetPlayerHand()->GetOverlappingInteractable();
+
+	AInteractable* Interactable= Cast<AInteractable>(InteractableObject);
+	
+	if (!InteractableObject) //if hand is empty
+		return;
+
+	if(Interactable->bHoldToInteract)
+		HoldInteract_Start(Interactable);
+	else
+		SingleInteract(Interactable);
+	
 }
 
-void APlanePlayerCharacter::Server_Interact_Implementation(UObject* ItemToPickUp)
+void APlanePlayerCharacter::SingleInteract(AInteractable* Interactable)
 {
-	AGrabHandle* HandleToGrab= Cast<AGrabHandle>(ItemToPickUp);
-	if (HandleToGrab)
-	{
-		OnServerGrabHandle(HandleToGrab);
-		return;
-	}
-	
-	AWorldItem* WorldItemToPickUp = Cast<AWorldItem>(ItemToPickUp);
-	if(WorldItemToPickUp)
-	{
-		this->OnServerPickUpItem(WorldItemToPickUp);
-		return;
-	}
-		
+	Interactable->Interact(this);
 }
+
+void APlanePlayerCharacter::HoldInteract_Start(AInteractable* Interactable)
+{
+	this->CurrentHoldInteractable=Interactable;
+	CurrentHoldInteractable->HoldInteract_Start(this);
+}
+
+void APlanePlayerCharacter::HoldInteract_End()
+{
+	if(!CurrentHoldInteractable)
+		return;
+	
+	CurrentHoldInteractable->HoldInteract_End(this);
+	this->CurrentHoldInteractable=nullptr;
+}
+
 
 void APlanePlayerCharacter::Server_LetGo_Implementation()
 {
@@ -259,7 +269,7 @@ void APlanePlayerCharacter::Server_LetGo_Implementation()
 	}
 }
 
-void APlanePlayerCharacter::OnServerPickUpItem(AWorldItem* Item)
+void APlanePlayerCharacter::ServerPickUpItem_Implementation(AWorldItem* Item)
 {
 	FAttachmentTransformRules AttachRules(
 		EAttachmentRule::SnapToTarget, // Location
@@ -273,7 +283,7 @@ void APlanePlayerCharacter::OnServerPickUpItem(AWorldItem* Item)
 	R_CurrentyHeldWorldItem->OnPickedUp_Server.Broadcast(); 
 }
 
-void APlanePlayerCharacter::OnServerGrabHandle(AGrabHandle* Handle)
+void APlanePlayerCharacter::ServerGrabHandle_Implementation(AGrabHandle* Handle)
 {
 	R_CurrentlyHeldGrabHandle = Handle;
 	R_CurrentlyHeldGrabHandle->OnGrabbed.Broadcast(this->GetPlayerHand(), this);
@@ -281,6 +291,9 @@ void APlanePlayerCharacter::OnServerGrabHandle(AGrabHandle* Handle)
 
 void APlanePlayerCharacter::OnServerDropItem()
 {
+	if(!HasAuthority())
+		return;
+	
 	FDetachmentTransformRules DetachRules(EDetachmentRule::KeepWorld, true);
 	R_CurrentyHeldWorldItem->DetachFromActor(DetachRules);
 	R_CurrentyHeldWorldItem->OnDropped_Server.Broadcast();
@@ -289,6 +302,9 @@ void APlanePlayerCharacter::OnServerDropItem()
 
 void APlanePlayerCharacter::OnServerLetHandleGo()
 {
+	if(!HasAuthority())
+		return;
+	
 	R_CurrentlyHeldGrabHandle->OnLetGo.Broadcast(this->GetPlayerHand(), this);
 	R_CurrentlyHeldGrabHandle=nullptr;
 }

@@ -4,6 +4,7 @@
 #include "Interactables/Items/WorldItem.h"
 
 #include "Debug.h"
+#include "PlayerCharacter/PlanePlayerCharacter.h"
 #include "UtilityActors/Turbulence/TurbulenceReciever.h"
 
 // Sets default values
@@ -77,4 +78,12 @@ void AWorldItem::CheckUp()
 	}
 	
 }
+
+void AWorldItem::Interact_Implementation(APlanePlayerCharacter* InteractingPlayer)
+{
+	Super::Interact_Implementation(InteractingPlayer);
+	InteractingPlayer->ServerPickUpItem(this);
+}
+
+
 
