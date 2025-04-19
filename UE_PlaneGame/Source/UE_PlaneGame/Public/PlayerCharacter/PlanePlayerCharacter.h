@@ -8,6 +8,7 @@
 #include "PlanePlayerCharacter.generated.h"
 
 
+class AWorldButton;
 class UTurbulenceReciever;
 class APlayerHand;
 class AWorldItem;
@@ -97,7 +98,7 @@ protected:
 	UInputAction* HandTurnAction;
 
 	UPROPERTY(EditAnywhere, Category = "Input|Action")
-	UInputAction* GrabAction;
+	UInputAction* InteractAction;
 
 	UPROPERTY(EditAnywhere, Category = "Input|Action")
 	UInputAction* CrouchAction;
@@ -135,12 +136,14 @@ private:
 	void ActivateHandMovement();
 	void DeactivateHandMovement();
 
-	//Grab and let go
+	//Interact
+	
+	//Grab and let go 
 	void ToggleGrab();
 	
 	UFUNCTION(Server,Reliable)
-	void Server_PickUp(UObject* ItemToPickUp);
-	void Server_PickUp_Implementation(UObject* ItemToPickUp);
+	void Server_Interact(UObject* ItemToPickUp);
+	void Server_Interact_Implementation(UObject* ItemToPickUp);
 	
 	UFUNCTION(Server,Reliable)
 	void Server_LetGo();
@@ -159,6 +162,11 @@ private:
 	UPROPERTY(Replicated)
 	AGrabHandle* R_CurrentlyHeldGrabHandle =nullptr;
 
+
+	UFUNCTION(Server,Reliable)
+	void Server_PressButton(AWorldButton* ButtonToPress);
+	void Server_PressButton_Implementation(AWorldButton* ButtonToPress);
+	
 	//for moving hand back
 	bool bMovingHand=false;
 

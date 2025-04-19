@@ -40,7 +40,7 @@ protected:
 	APlanePlayerCharacter* MyOwningPlayer;
 
 public:
-	AInteractable* GetOverlappingItem();
+	AInteractable* GetOverlappingInteractable();
 
 private:
 	UCameraComponent* OwningPlayerCamera;
