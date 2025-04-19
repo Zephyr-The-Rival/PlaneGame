@@ -98,6 +98,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Input|Action")
 	UInputAction* CrouchAction;
 
+	UPROPERTY(EditAnywhere, Category = "Input|Action")
+	UInputAction* ThrowAction;
+
 	//process input
 
 	//Moving
@@ -127,7 +130,8 @@ private:
 	
 	void ActivateHandMovement();
 	void DeactivateHandMovement();
-	
+
+	//Grab and let go
 	void ToggleGrab();
 	
 	UFUNCTION(Server,Reliable)
@@ -160,6 +164,19 @@ private:
 	
 	
 	void NotifyToolHandMovement(const FVector& MovementVector);
+
+
+	//Throw
+	void StartThrow();
+	
+	UFUNCTION(Server, Reliable)
+	void Server_Throw(FVector ThrowVector);
+	void Server_Throw_Implementation(FVector ThrowVector);
+
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float ThrowStrength=10000;
+	
 	
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Input|Action|Move")

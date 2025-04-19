@@ -2,6 +2,8 @@
 
 
 #include "Interactables/Items/WorldItem.h"
+
+#include "Debug.h"
 #include "UtilityActors/Turbulence/TurbulenceReciever.h"
 
 // Sets default values
@@ -16,7 +18,8 @@ AWorldItem::AWorldItem()
 void AWorldItem::BeginPlay()
 {
 	Super::BeginPlay();
-
+	
+	CheckUp();
 	OnPickedUp_Server.AddDynamic(this, &AWorldItem::MC_OnPickedUp);
 	OnDropped_Server.AddDynamic(this,&AWorldItem::MC_OnDropped);
 }
@@ -52,5 +55,26 @@ void AWorldItem::MC_OnDropped_Implementation()
 	{
 		this->TurbulenceReciever->bActive=true;
 	}
+}
+
+void AWorldItem::CheckUp()
+{
+	if(!this->bReplicates)
+		Debug::Print(this->GetName()+ ": bReplicates is false",10,FColor::Red);
+
+	UPrimitiveComponent* PrimitiveRootComponent=Cast<UPrimitiveComponent>(GetRootComponent());
+	if(!PrimitiveRootComponent)
+	{
+		Debug::Print(this->GetName()+ ": Root component is not a primitive component",10,FColor::Red);
+		return;
+	}
+	
+	if(!PrimitiveRootComponent->GetIsReplicated())
+	{
+		Debug::Print(this->GetName()+ ": Root component does not replicate",10,FColor::Red);
+		Debug::Print(this->GetName()+ ": Also Check if ReplicatesMovement should be active!",10,FColor::Red);
+		return;
+	}
+	
 }
 

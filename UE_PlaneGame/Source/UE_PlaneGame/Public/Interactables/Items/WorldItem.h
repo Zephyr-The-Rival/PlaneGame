@@ -45,5 +45,6 @@ private:
 	void MC_OnDropped();
 	void MC_OnDropped_Implementation();
 
-	
+private:
+	void CheckUp();
 };

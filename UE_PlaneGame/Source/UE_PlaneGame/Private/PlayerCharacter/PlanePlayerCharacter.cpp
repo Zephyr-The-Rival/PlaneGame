@@ -9,6 +9,7 @@
 #include "EnhancedInputComponent.h"
 #include "InputActionValue.h"
 #include "Debug.h"
+#include "IDetailTreeNode.h"
 #include "Interactables/GrabHandle.h"
 #include "Interactables/Items/Tool.h"
 #include "Interactables/Items/WorldItem.h"
@@ -72,6 +73,8 @@ void APlanePlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 	EIC->BindAction(HandTurnAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::LocalCalculateHandRotation);
 	EIC->BindAction(ToggleHandMovementAction, ETriggerEvent::Started, this, &APlanePlayerCharacter::ActivateHandMovement);
 	EIC->BindAction(ToggleHandMovementAction, ETriggerEvent::Completed, this, &APlanePlayerCharacter::DeactivateHandMovement);
+
+	EIC->BindAction(ThrowAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::StartThrow);
 	
 }
 
@@ -299,6 +302,23 @@ void APlanePlayerCharacter::NotifyToolHandMovement(const FVector& MovementVector
 			Tool->OnHandMovement(MovementVector);
 		}
 	}
+}
+
+void APlanePlayerCharacter::StartThrow()
+{
+	this->Server_Throw(this->FirstPersonCamera->GetForwardVector());
+}
+
+void APlanePlayerCharacter::Server_Throw_Implementation(FVector ThrowVector)
+{
+	if(!this->R_CurrentyHeldWorldItem)
+		return;
+
+	AWorldItem* TmpItem = R_CurrentyHeldWorldItem;
+	Server_LetGo_Implementation();
+
+	UPrimitiveComponent* PhysicsComponent = Cast<UPrimitiveComponent>(TmpItem->GetRootComponent());
+	PhysicsComponent->AddForce(ThrowVector * this->ThrowStrength* PhysicsComponent->GetMass());
 }
 
 
