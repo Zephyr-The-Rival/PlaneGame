@@ -38,12 +38,28 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UBoxComponent* InteractCollision;
-public:
+protected:
 
+	
+	void Interact_Implementation(APlanePlayerCharacter* InteractingPlayer) override;
+
+public:
 	UPROPERTY(EditAnywhere, BlueprintAssignable, BlueprintCallable)
 	FButtonEvent OnButtonPressed;
+	
 
-	UFUNCTION(BlueprintNativeEvent)
-	void Press(APlanePlayerCharacter* Player);
-	void Press_Implementation(APlanePlayerCharacter* Player);
+	
+
+protected:
+	void HoldInteract_Start_Implementation(APlanePlayerCharacter* InteractingPlayer) override;
+	void HoldInteract_End_Implementation(APlanePlayerCharacter* InteractingPlayer) override;
+public:
+	UPROPERTY(EditAnywhere, BlueprintAssignable, BlueprintCallable)
+	FButtonEvent OnButtonHold_Start;
+
+	UPROPERTY(EditAnywhere, BlueprintAssignable, BlueprintCallable)
+	FButtonEvent OnButtonHold_End;
+	
+
+	
 };

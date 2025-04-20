@@ -27,7 +27,6 @@ AWorldButton::AWorldButton()
 void AWorldButton::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
 // Called every frame
@@ -36,8 +35,25 @@ void AWorldButton::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-void AWorldButton::Press_Implementation(APlanePlayerCharacter* Player)
+void AWorldButton::Interact_Implementation(APlanePlayerCharacter* InteractingPlayer)
 {
-	//will be defined in blueprints;
+	Super::Interact_Implementation(InteractingPlayer);
+	this->OnButtonPressed.Broadcast(InteractingPlayer);
 }
+
+void AWorldButton::HoldInteract_Start_Implementation(APlanePlayerCharacter* InteractingPlayer)
+{
+	Super::HoldInteract_Start_Implementation(InteractingPlayer);
+	this->OnButtonHold_Start.Broadcast(InteractingPlayer);
+}
+
+void AWorldButton::HoldInteract_End_Implementation(APlanePlayerCharacter* InteractingPlayer)
+{
+	Super::HoldInteract_End_Implementation(InteractingPlayer);
+	this->OnButtonHold_End.Broadcast(InteractingPlayer);
+}
+
+
+
+
 

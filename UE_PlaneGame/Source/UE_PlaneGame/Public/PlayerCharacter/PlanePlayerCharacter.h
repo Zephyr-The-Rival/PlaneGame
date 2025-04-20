@@ -122,10 +122,6 @@ private:
 	//Hand Movement
 	
 	void Local_CalculateHandMovement(const FInputActionValue& Value);
-
-	UFUNCTION(Server, Unreliable)
-	void Server_ApplyHandMovement(FVector Offset);
-	void Server_ApplyHandMovement_Implementation(FVector Offset);
 	
 	void LocalCalculateHandRotation(const FInputActionValue& Value);
 
@@ -140,30 +136,38 @@ private:
 
 	void Interact();
 	//Grab and let go
-	void SingleInteract(AInteractable* Interactable);
-	void HoldInteract_Start(AInteractable* Interactable);
-	void HoldInteract_End();
+
+	UFUNCTION(Server, Unreliable)
+	void Server_SingleInteract(AInteractable* Interactable);
+	void Server_SingleInteract_Implementation(AInteractable* Interactable);
+	
+
+	UFUNCTION(Server, Unreliable)
+	void Server_HoldInteract_Start(AInteractable* Interactable);
+	void Server_HoldInteract_Start_Implementation(AInteractable* Interactable);
+
+
+	UFUNCTION(Server, Unreliable)
+	void Server_HoldInteract_End();
+	void Server_HoldInteract_End_Implementation();
 
 	AInteractable* CurrentHoldInteractable;
-	
-	
-	UFUNCTION(Server,Reliable)
+
+	UFUNCTION(Server, Unreliable)
 	void Server_LetGo();
 	void Server_LetGo_Implementation();
+	
+public:
+	
+	void PickUpItem(AWorldItem* Item);
 
 public:
-	UFUNCTION(Server, Reliable)
-	void ServerPickUpItem(AWorldItem* Item);
-	void ServerPickUpItem_Implementation(AWorldItem* Item);
-
-public:
-	UFUNCTION(Server,Reliable)
-	void ServerGrabHandle(AGrabHandle* Handle);
-	void ServerGrabHandle_Implementation(AGrabHandle* Handle);
+	void GrabHandle(AGrabHandle* Handle);
+	
 
 private:	
-	void OnServerDropItem();
-	void OnServerLetHandleGo();
+	void DropItem();
+	void LetHandleGo();
 
 
 	
@@ -172,11 +176,7 @@ private:
 
 	UPROPERTY(Replicated)
 	AGrabHandle* R_CurrentlyHeldGrabHandle =nullptr;
-
-
-	UFUNCTION(Server,Reliable)
-	void Server_PressButton(AWorldButton* ButtonToPress);
-	void Server_PressButton_Implementation(AWorldButton* ButtonToPress);
+	
 	
 	//for moving hand back
 	bool bMovingHand=false;
@@ -216,4 +216,25 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Input|Action|HandMovement")
 	float HandMovementCameraSpeed = 0.5f;
+
+	//Visuals on other machines
+
+private:
+	UFUNCTION(Server, Unreliable)
+	void Server_Tick_UpdateVisualHandTransform(FTransform HandWorldTransform);
+	void Server_Tick_UpdateVisualHandTransform_Implementation(FTransform HandWorldTransform);
+	
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void MC_ApplyVisualHandPosition(FTransform HandWorldTransform);
+	void MC_ApplyVisualHandPosition_Implementation(FTransform HandWorldTransform);
+	
+	FTransform VisualNonLocalHandPTransform;
+
+public:
+	//To use in anim bp for the player hand pos
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+	FTransform GetHandWorldTransform();
+	
+	
 };

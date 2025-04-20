@@ -16,7 +16,6 @@ APlayerHand::APlayerHand()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-
 	this->Target = CreateDefaultSubobject<USceneComponent>(TEXT("SceneComponent"));
 	this->Target->SetupAttachment(this->GetRootComponent());
 	
@@ -38,8 +37,16 @@ void APlayerHand::Tick(float DeltaTime)
 	Tick_SetCollisionPosition();
 }
 
+USceneComponent* APlayerHand::GetAttachComponent()
+{
+	return this->HandCollision;
+}
+
 AInteractable* APlayerHand::GetOverlappingInteractable()
 {
+	if(!MyOwningPlayer)
+		return nullptr;
+	
 	TArray<AActor*> OverlappingActors;
 	HandCollision->GetOverlappingActors(OverlappingActors);
 

@@ -50,6 +50,9 @@ void APlanePlayerCharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	if(!bMovingHand && this->IsLocallyControlled())
 		Server_Tick_MoveHandBack();
+
+	if(this->IsLocallyControlled())
+		Server_Tick_UpdateVisualHandTransform(GetPlayerHand()->GetAttachComponent()->GetComponentTransform());
 }
 
 // Called to bind functionality to input
@@ -69,7 +72,7 @@ void APlanePlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 	EIC->BindAction(CrouchAction, ETriggerEvent::Completed, this, &APlanePlayerCharacter::EndCrouch);
 	
 	EIC->BindAction(InteractAction, ETriggerEvent::Started, this, &APlanePlayerCharacter::Interact);
-	EIC->BindAction(InteractAction, ETriggerEvent::Completed, this, &APlanePlayerCharacter::HoldInteract_End);
+	EIC->BindAction(InteractAction, ETriggerEvent::Completed, this, &APlanePlayerCharacter::Server_HoldInteract_End);
 	
 	EIC->BindAction(HandMovementAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::Local_CalculateHandMovement);
 	EIC->BindAction(HandTurnAction, ETriggerEvent::Triggered, this, &APlanePlayerCharacter::LocalCalculateHandRotation);
@@ -138,6 +141,9 @@ void APlanePlayerCharacter::EndCrouch()
 
 void APlanePlayerCharacter::Local_CalculateHandMovement(const FInputActionValue& Value)
 {
+	if(!IsLocallyControlled())
+		return;
+	
 	FVector2D VectorValue = Value.Get<FVector2D>();
 
 	bool bHandIsMoving = !VectorValue.IsNearlyZero();
@@ -150,8 +156,7 @@ void APlanePlayerCharacter::Local_CalculateHandMovement(const FInputActionValue&
 	//Debug::Print("Hand distance to center: "+ FString::SanitizeFloat(PredictedPosition.Length()),GetWorld()->DeltaTimeSeconds);
 	if(PredictedPosition.Length()<this->CameraMoveDistanceThreshold)
 	{
-		//this->PlayerHandCA->AddRelativeLocation(MovementVector);
-		this->Server_ApplyHandMovement(MovementVector);
+		this->PlayerHandCA->AddRelativeLocation(MovementVector);
 		if (bHandIsMoving)
 		{
 			NotifyToolHandMovement(MovementVector);
@@ -165,14 +170,8 @@ void APlanePlayerCharacter::Local_CalculateHandMovement(const FInputActionValue&
 		AddControllerPitchInput(DeltaLook.Y * -1);
 		AddControllerYawInput(DeltaLook.X);
 	}
-	
-	
 }
 
-void APlanePlayerCharacter::Server_ApplyHandMovement_Implementation(FVector Offset)
-{
-	this->PlayerHandCA->AddRelativeLocation(Offset);
-}
 
 void APlanePlayerCharacter::LocalCalculateHandRotation(const FInputActionValue& Value)
 {
@@ -224,28 +223,28 @@ void APlanePlayerCharacter::Interact()
 
 	AInteractable* Interactable= Cast<AInteractable>(InteractableObject);
 	
-	if (!InteractableObject) //if hand is empty
+	if (!InteractableObject) //if no item can be found in hand
 		return;
 
 	if(Interactable->bHoldToInteract)
-		HoldInteract_Start(Interactable);
+		Server_HoldInteract_Start(Interactable);
 	else
-		SingleInteract(Interactable);
+		Server_SingleInteract(Interactable);
 	
 }
 
-void APlanePlayerCharacter::SingleInteract(AInteractable* Interactable)
+void APlanePlayerCharacter::Server_SingleInteract_Implementation(AInteractable* Interactable)
 {
 	Interactable->Interact(this);
 }
 
-void APlanePlayerCharacter::HoldInteract_Start(AInteractable* Interactable)
+void APlanePlayerCharacter::Server_HoldInteract_Start_Implementation(AInteractable* Interactable)
 {
 	this->CurrentHoldInteractable=Interactable;
 	CurrentHoldInteractable->HoldInteract_Start(this);
 }
 
-void APlanePlayerCharacter::HoldInteract_End()
+void APlanePlayerCharacter::Server_HoldInteract_End_Implementation()
 {
 	if(!CurrentHoldInteractable)
 		return;
@@ -259,18 +258,21 @@ void APlanePlayerCharacter::Server_LetGo_Implementation()
 {
 	if(R_CurrentlyHeldGrabHandle)
 	{
-		this->OnServerLetHandleGo();
+		this->LetHandleGo();
 		return;
 	}
 	if(R_CurrentyHeldWorldItem)
 	{
-		OnServerDropItem();
+		DropItem();
 		return;
 	}
 }
 
-void APlanePlayerCharacter::ServerPickUpItem_Implementation(AWorldItem* Item)
+void APlanePlayerCharacter::PickUpItem(AWorldItem* Item)
 {
+	if(!HasAuthority())
+		return;
+	
 	FAttachmentTransformRules AttachRules(
 		EAttachmentRule::SnapToTarget, // Location
 		EAttachmentRule::SnapToTarget, // Rotation
@@ -278,18 +280,21 @@ void APlanePlayerCharacter::ServerPickUpItem_Implementation(AWorldItem* Item)
 		true // Weld simulated bodies
 		);
 		
-	Item->AttachToComponent(this->PlayerHandCA, AttachRules);
+	Item->AttachToComponent(this->GetPlayerHand()->GetAttachComponent(), AttachRules);
 	R_CurrentyHeldWorldItem=Item;
 	R_CurrentyHeldWorldItem->OnPickedUp_Server.Broadcast(); 
 }
 
-void APlanePlayerCharacter::ServerGrabHandle_Implementation(AGrabHandle* Handle)
+void APlanePlayerCharacter::GrabHandle(AGrabHandle* Handle)
 {
+	if(!HasAuthority())
+		return;
+	
 	R_CurrentlyHeldGrabHandle = Handle;
 	R_CurrentlyHeldGrabHandle->OnGrabbed.Broadcast(this->GetPlayerHand(), this);
 }
 
-void APlanePlayerCharacter::OnServerDropItem()
+void APlanePlayerCharacter::DropItem()
 {
 	if(!HasAuthority())
 		return;
@@ -300,7 +305,7 @@ void APlanePlayerCharacter::OnServerDropItem()
 	R_CurrentyHeldWorldItem=nullptr;
 }
 
-void APlanePlayerCharacter::OnServerLetHandleGo()
+void APlanePlayerCharacter::LetHandleGo()
 {
 	if(!HasAuthority())
 		return;
@@ -309,11 +314,6 @@ void APlanePlayerCharacter::OnServerLetHandleGo()
 	R_CurrentlyHeldGrabHandle=nullptr;
 }
 
-
-void APlanePlayerCharacter::Server_PressButton_Implementation(AWorldButton* ButtonToPress)
-{
-	ButtonToPress->Press(this);
-}
 
 void APlanePlayerCharacter::Server_Tick_MoveHandBack_Implementation()
 {
@@ -347,6 +347,27 @@ void APlanePlayerCharacter::Server_Throw_Implementation(FVector ThrowVector)
 
 	UPrimitiveComponent* PhysicsComponent = Cast<UPrimitiveComponent>(TmpItem->GetRootComponent());
 	PhysicsComponent->AddForce(ThrowVector * this->ThrowStrength* PhysicsComponent->GetMass());
+}
+
+void APlanePlayerCharacter::Server_Tick_UpdateVisualHandTransform_Implementation(FTransform HandWorldTransform)
+{
+	this->MC_ApplyVisualHandPosition(HandWorldTransform);
+}
+
+void APlanePlayerCharacter::MC_ApplyVisualHandPosition_Implementation(FTransform HandWorldTransform)
+{
+	if(IsLocallyControlled())//only for non controlled players
+		return;
+
+	this->VisualNonLocalHandPTransform=HandWorldTransform;
+}
+
+FTransform APlanePlayerCharacter::GetHandWorldTransform()
+{
+	if(IsLocallyControlled())
+		return GetPlayerHand()->GetAttachComponent()->GetComponentTransform();
+	else
+		return VisualNonLocalHandPTransform;
 }
 
 

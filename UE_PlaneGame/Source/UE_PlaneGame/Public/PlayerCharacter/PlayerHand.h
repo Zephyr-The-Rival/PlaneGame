@@ -36,6 +36,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	USphereComponent* HandCollision;
 
+public:
+	USceneComponent* GetAttachComponent();
+protected:
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	APlanePlayerCharacter* MyOwningPlayer;
 

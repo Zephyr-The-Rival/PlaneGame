@@ -82,7 +82,7 @@ void AWorldItem::CheckUp()
 void AWorldItem::Interact_Implementation(APlanePlayerCharacter* InteractingPlayer)
 {
 	Super::Interact_Implementation(InteractingPlayer);
-	InteractingPlayer->ServerPickUpItem(this);
+	InteractingPlayer->PickUpItem(this);
 }
 
 

@@ -29,6 +29,6 @@ void AGrabHandle::Tick(float DeltaTime)
 void AGrabHandle::Interact_Implementation(APlanePlayerCharacter* InteractingPlayer)
 {
 	Super::Interact_Implementation(InteractingPlayer);
-	InteractingPlayer->ServerGrabHandle(this);
+	InteractingPlayer->GrabHandle(this);
 }
 
