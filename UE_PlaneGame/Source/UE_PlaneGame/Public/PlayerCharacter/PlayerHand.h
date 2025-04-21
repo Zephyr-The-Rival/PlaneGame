@@ -48,7 +48,6 @@ public:
 
 private:
 	UCameraComponent* OwningPlayerCamera;
-
 	void Tick_SetCollisionPosition();
 
 public:

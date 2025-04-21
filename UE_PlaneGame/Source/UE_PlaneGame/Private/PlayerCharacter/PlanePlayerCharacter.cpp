@@ -50,9 +50,7 @@ void APlanePlayerCharacter::BeginPlay()
 void APlanePlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if(!bMovingHand && this->IsLocallyControlled())
-		Server_Tick_MoveHandBack();
-
+	
 	 if(this->IsLocallyControlled())
 	 {
 	 	Server_Tick_SendCameraPitch(FirstPersonCamera->GetRelativeRotation().Pitch); 
@@ -208,6 +206,7 @@ void APlanePlayerCharacter::ActivateHandMovement()
 	this->bMovingHand=true;
 	this->AddMappingContext(MoveHandMappingContext);
 	this->RemoveMappingContext(MoveCameraMappingContext);
+	this->Server_ToggleResetHandTransform(false);//if player is still performing the hand move back, this stops the timeline
 }
 
 void APlanePlayerCharacter::DeactivateHandMovement()
@@ -223,6 +222,7 @@ void APlanePlayerCharacter::DeactivateHandMovement()
 	}
 	this->RemoveMappingContext(MoveHandMappingContext);
 	this->AddMappingContext(MoveCameraMappingContext);
+	this->Server_ToggleResetHandTransform(true);
 }
 
 void APlanePlayerCharacter::Interact()
@@ -335,9 +335,22 @@ void APlanePlayerCharacter::LetHandleGo()
 }
 
 
-void APlanePlayerCharacter::Server_Tick_MoveHandBack_Implementation()
+void APlanePlayerCharacter::Server_ToggleResetHandTransform_Implementation(const bool bStartHandMovement)
 {
-	this->HandSocket->SetRelativeLocation(FMath::VInterpTo(this->HandSocket->GetRelativeLocation(),this->OriginalHandPosition,GetWorld()->DeltaTimeSeconds,1));
+	if(bStartHandMovement)
+		this->OnServer_StartResetHandTransform();
+	else
+		this->OnServer_StopResetHandTransform();
+}
+
+void APlanePlayerCharacter::OnServer_StartResetHandTransform_Implementation()
+{
+	//defined in blueprints
+}
+
+void APlanePlayerCharacter::OnServer_StopResetHandTransform_Implementation()
+{
+	//defined in blueprints
 }
 
 void APlanePlayerCharacter::NotifyToolHandMovement(const FVector& MovementVector)

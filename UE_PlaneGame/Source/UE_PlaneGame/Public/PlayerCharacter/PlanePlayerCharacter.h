@@ -65,9 +65,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	APlayerHand* MyPlayerHand;
 
-private:
+protected:
+	UPROPERTY(EditAnywhere,BlueprintReadOnly)
 	FVector OriginalHandPosition;
-
+private:
 	void OnBeginPlay_SpawnHand();
 	
 	//Basic Input
@@ -194,10 +195,21 @@ private:
 	//for moving hand back
 	bool bMovingHand=false;
 
-	UFUNCTION(Server, Unreliable)
-	void Server_Tick_MoveHandBack();
-	void Server_Tick_MoveHandBack_Implementation();
+	UFUNCTION(Server, Reliable)
+	void Server_ToggleResetHandTransform(bool bStartHandMovement);
+	void Server_ToggleResetHandTransform_Implementation(bool bStartHandMovement);
+
+protected:
 	
+	UFUNCTION(BlueprintNativeEvent)
+	void OnServer_StartResetHandTransform();
+	void OnServer_StartResetHandTransform_Implementation();
+
+	UFUNCTION(BlueprintNativeEvent)
+	void OnServer_StopResetHandTransform();
+	void OnServer_StopResetHandTransform_Implementation();
+	
+private:
 	
 	void NotifyToolHandMovement(const FVector& MovementVector);
 
