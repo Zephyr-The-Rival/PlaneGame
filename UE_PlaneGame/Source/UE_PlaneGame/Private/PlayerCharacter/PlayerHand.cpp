@@ -28,6 +28,17 @@ APlayerHand::APlayerHand()
 void APlayerHand::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if(!HasAuthority()) //authority get it from spawning, client needs to get it later
+	{
+		MyOwningPlayer= Cast<APlanePlayerCharacter>(GetAttachParentActor());
+		MyOwningPlayer->MyPlayerHand=this;
+	}
+
+	if(!MyOwningPlayer->IsLocallyControlled())
+		this->HandCollision->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
+		
+		
 }
 
 // Called every frame
@@ -37,16 +48,14 @@ void APlayerHand::Tick(float DeltaTime)
 	Tick_SetCollisionPosition();
 }
 
-USceneComponent* APlayerHand::GetAttachComponent()
+USceneComponent* APlayerHand::GetItemAttachComponent()
 {
 	return this->HandCollision;
 }
 
 AInteractable* APlayerHand::GetOverlappingInteractable()
 {
-	if(!MyOwningPlayer)
-		return nullptr;
-	
+	//is called on locally controled pawn
 	TArray<AActor*> OverlappingActors;
 	HandCollision->GetOverlappingActors(OverlappingActors);
 

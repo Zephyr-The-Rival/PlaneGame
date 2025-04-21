@@ -52,16 +52,23 @@ protected:
 public:
 	UCameraComponent* GetCamera() const {return this->FirstPersonCamera;}
 protected:
+
 	
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	UChildActorComponent* PlayerHandCA;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FVector OriginalHandPosition;
-	
+	USceneComponent* HandSocket;
+	//spawned on begin play (child actor had problems replicating)
+
+	UPROPERTY(BlueprintReadWrite,EditDefaultsOnly)
+	TSubclassOf<APlayerHand> BlueprintHandToSpawn;
+
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	APlayerHand* MyPlayerHand;
+
 private:
-	APlayerHand* GetPlayerHand();
+	FVector OriginalHandPosition;
+
+	void OnBeginPlay_SpawnHand();
 	
 	//Basic Input
 protected:
@@ -122,6 +129,11 @@ private:
 	//Hand Movement
 	
 	void Local_CalculateHandMovement(const FInputActionValue& Value);
+
+	UFUNCTION(Server, Unreliable)
+	void Server_ApplyHandMovement(FVector Offset);
+	void Server_ApplyHandMovement_Implementation(FVector Offset);
+
 	
 	void LocalCalculateHandRotation(const FInputActionValue& Value);
 
@@ -137,29 +149,30 @@ private:
 	void Interact();
 	//Grab and let go
 
-	UFUNCTION(Server, Unreliable)
+	UFUNCTION(Server, Reliable)
 	void Server_SingleInteract(AInteractable* Interactable);
 	void Server_SingleInteract_Implementation(AInteractable* Interactable);
 	
 
-	UFUNCTION(Server, Unreliable)
+	UFUNCTION(Server, Reliable)
 	void Server_HoldInteract_Start(AInteractable* Interactable);
 	void Server_HoldInteract_Start_Implementation(AInteractable* Interactable);
 
 
-	UFUNCTION(Server, Unreliable)
+	UFUNCTION(Server, Reliable)
 	void Server_HoldInteract_End();
 	void Server_HoldInteract_End_Implementation();
 
 	AInteractable* CurrentHoldInteractable;
 
-	UFUNCTION(Server, Unreliable)
+	UFUNCTION(Server, Reliable)
 	void Server_LetGo();
 	void Server_LetGo_Implementation();
 	
 public:
 	
 	void PickUpItem(AWorldItem* Item);
+
 
 public:
 	void GrabHandle(AGrabHandle* Handle);
@@ -217,20 +230,17 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Input|Action|HandMovement")
 	float HandMovementCameraSpeed = 0.5f;
 
-	//Visuals on other machines
 
 private:
+	//for mulitplayer sync only.
+
 	UFUNCTION(Server, Unreliable)
-	void Server_Tick_UpdateVisualHandTransform(FTransform HandWorldTransform);
-	void Server_Tick_UpdateVisualHandTransform_Implementation(FTransform HandWorldTransform);
-	
+	void Server_Tick_SendCameraPitch(float CameraPitch);
+	void Server_Tick_SendCameraPitch_Implementation(float CameraPitch);
 
 	UFUNCTION(NetMulticast, Unreliable)
-	void MC_ApplyVisualHandPosition(FTransform HandWorldTransform);
-	void MC_ApplyVisualHandPosition_Implementation(FTransform HandWorldTransform);
-	
-	FTransform VisualNonLocalHandPTransform;
-
+	void MC_ApplyCameraPitch(float CameraPitch);
+	void MC_ApplyCameraPitch_Implementation(float CameraPitch);
 public:
 	//To use in anim bp for the player hand pos
 	UFUNCTION(BlueprintCallable, BlueprintPure)

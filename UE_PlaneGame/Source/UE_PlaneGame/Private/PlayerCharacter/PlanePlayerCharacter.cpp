@@ -28,8 +28,8 @@ APlanePlayerCharacter::APlanePlayerCharacter()
 	FirstPersonCamera->SetupAttachment(RootComponent);
 	FirstPersonCamera->bUsePawnControlRotation = true;
 	
-	PlayerHandCA= CreateDefaultSubobject<UChildActorComponent>(TEXT("ChildActor"));
-	PlayerHandCA->SetupAttachment(FirstPersonCamera);
+	HandSocket= CreateDefaultSubobject<USceneComponent>(TEXT("SceneComponent"));
+	HandSocket->SetupAttachment(FirstPersonCamera);
 }
 
 // Called when the game starts or when spawned
@@ -41,7 +41,9 @@ void APlanePlayerCharacter::BeginPlay()
 	this->AddMappingContext(this->BasicCharacterInputMappingContext);
 	this->AddMappingContext(MoveCameraMappingContext);
 
-	this->OriginalHandPosition= this->PlayerHandCA->GetRelativeLocation();//gets remembered to move back later
+	OriginalHandPosition= HandSocket->GetRelativeLocation();
+	if(HasAuthority())
+		OnBeginPlay_SpawnHand();//spawns a player hand, sets it as this->MyPlayerHand and attaches it to this->HandSocket
 }
 
 // Called every frame
@@ -51,8 +53,11 @@ void APlanePlayerCharacter::Tick(float DeltaTime)
 	if(!bMovingHand && this->IsLocallyControlled())
 		Server_Tick_MoveHandBack();
 
-	if(this->IsLocallyControlled())
-		Server_Tick_UpdateVisualHandTransform(GetPlayerHand()->GetAttachComponent()->GetComponentTransform());
+	 if(this->IsLocallyControlled())
+	 {
+	 	Server_Tick_SendCameraPitch(FirstPersonCamera->GetRelativeRotation().Pitch); 
+	 }
+	 	
 }
 
 // Called to bind functionality to input
@@ -90,9 +95,16 @@ void APlanePlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(APlanePlayerCharacter, R_CurrentlyHeldGrabHandle);
 }
 
-APlayerHand* APlanePlayerCharacter::GetPlayerHand()
+
+void APlanePlayerCharacter::OnBeginPlay_SpawnHand()
 {
-	return Cast<APlayerHand>(this->PlayerHandCA->GetChildActor());
+//authority is assumed
+
+	MyPlayerHand=GetWorld()->SpawnActorDeferred<APlayerHand>(BlueprintHandToSpawn, HandSocket->GetComponentTransform());
+	MyPlayerHand->MyOwningPlayer=this;
+	MyPlayerHand->FinishSpawning( HandSocket->GetComponentTransform());
+	MyPlayerHand->AttachToComponent(HandSocket, FAttachmentTransformRules::SnapToTargetIncludingScale);
+	
 }
 
 void APlanePlayerCharacter::AddMappingContext(UInputMappingContext* MappingContextToAdd)
@@ -151,12 +163,12 @@ void APlanePlayerCharacter::Local_CalculateHandMovement(const FInputActionValue&
 	FVector MovementVector = FVector(0, VectorValue.X, VectorValue.Y);
 	MovementVector *= HandMovementSpeed * GetWorld()->DeltaTimeSeconds;
 
-	FVector PredictedPosition=PlayerHandCA->GetRelativeLocation()+MovementVector;
+	FVector PredictedPosition=this->HandSocket->GetRelativeLocation()+MovementVector;
 	PredictedPosition*=FVector(0,1,1);//ignore Depth
 	//Debug::Print("Hand distance to center: "+ FString::SanitizeFloat(PredictedPosition.Length()),GetWorld()->DeltaTimeSeconds);
 	if(PredictedPosition.Length()<this->CameraMoveDistanceThreshold)
 	{
-		this->PlayerHandCA->AddRelativeLocation(MovementVector);
+		this->Server_ApplyHandMovement(MovementVector);
 		if (bHandIsMoving)
 		{
 			NotifyToolHandMovement(MovementVector);
@@ -173,6 +185,11 @@ void APlanePlayerCharacter::Local_CalculateHandMovement(const FInputActionValue&
 }
 
 
+void APlanePlayerCharacter::Server_ApplyHandMovement_Implementation(FVector Offset)
+{
+	this->HandSocket->AddRelativeLocation(Offset);
+}
+
 void APlanePlayerCharacter::LocalCalculateHandRotation(const FInputActionValue& Value)
 {
 	float FValue=Value.Get<float>();
@@ -183,7 +200,7 @@ void APlanePlayerCharacter::LocalCalculateHandRotation(const FInputActionValue& 
 
 void APlanePlayerCharacter::Server_ApplyHandRotation_Implementation(const FRotator DeltaRotation)
 {
-	PlayerHandCA->AddLocalRotation(DeltaRotation);	
+	HandSocket->AddLocalRotation(DeltaRotation);	
 }
 
 void APlanePlayerCharacter::ActivateHandMovement()
@@ -219,7 +236,7 @@ void APlanePlayerCharacter::Interact()
 		return;
 	}
 
-	UObject* InteractableObject = this->GetPlayerHand()->GetOverlappingInteractable();
+	UObject* InteractableObject = MyPlayerHand->GetOverlappingInteractable();
 
 	AInteractable* Interactable= Cast<AInteractable>(InteractableObject);
 	
@@ -272,15 +289,18 @@ void APlanePlayerCharacter::PickUpItem(AWorldItem* Item)
 {
 	if(!HasAuthority())
 		return;
-	
+
 	FAttachmentTransformRules AttachRules(
-		EAttachmentRule::SnapToTarget, // Location
-		EAttachmentRule::SnapToTarget, // Rotation
-		EAttachmentRule::KeepWorld, // Scale
-		true // Weld simulated bodies
-		);
-		
-	Item->AttachToComponent(this->GetPlayerHand()->GetAttachComponent(), AttachRules);
+	EAttachmentRule::SnapToTarget, // Location
+	EAttachmentRule::SnapToTarget, // Rotation
+	EAttachmentRule::KeepWorld, // Scale
+	true // Weld simulated bodies
+	);
+	
+	USceneComponent* AttachParentComponent=this->MyPlayerHand->GetItemAttachComponent(); 
+	
+	Item->AttachToComponent(AttachParentComponent, AttachRules);
+	
 	R_CurrentyHeldWorldItem=Item;
 	R_CurrentyHeldWorldItem->OnPickedUp_Server.Broadcast(); 
 }
@@ -291,7 +311,7 @@ void APlanePlayerCharacter::GrabHandle(AGrabHandle* Handle)
 		return;
 	
 	R_CurrentlyHeldGrabHandle = Handle;
-	R_CurrentlyHeldGrabHandle->OnGrabbed.Broadcast(this->GetPlayerHand(), this);
+	R_CurrentlyHeldGrabHandle->OnGrabbed.Broadcast(this->MyPlayerHand, this);
 }
 
 void APlanePlayerCharacter::DropItem()
@@ -310,14 +330,14 @@ void APlanePlayerCharacter::LetHandleGo()
 	if(!HasAuthority())
 		return;
 	
-	R_CurrentlyHeldGrabHandle->OnLetGo.Broadcast(this->GetPlayerHand(), this);
+	R_CurrentlyHeldGrabHandle->OnLetGo.Broadcast(this->MyPlayerHand, this);
 	R_CurrentlyHeldGrabHandle=nullptr;
 }
 
 
 void APlanePlayerCharacter::Server_Tick_MoveHandBack_Implementation()
 {
-	this->PlayerHandCA->SetRelativeLocation(FMath::VInterpTo(this->PlayerHandCA->GetRelativeLocation(),this->OriginalHandPosition,GetWorld()->DeltaTimeSeconds,1));
+	this->HandSocket->SetRelativeLocation(FMath::VInterpTo(this->HandSocket->GetRelativeLocation(),this->OriginalHandPosition,GetWorld()->DeltaTimeSeconds,1));
 }
 
 void APlanePlayerCharacter::NotifyToolHandMovement(const FVector& MovementVector)
@@ -349,25 +369,25 @@ void APlanePlayerCharacter::Server_Throw_Implementation(FVector ThrowVector)
 	PhysicsComponent->AddForce(ThrowVector * this->ThrowStrength* PhysicsComponent->GetMass());
 }
 
-void APlanePlayerCharacter::Server_Tick_UpdateVisualHandTransform_Implementation(FTransform HandWorldTransform)
+void APlanePlayerCharacter::Server_Tick_SendCameraPitch_Implementation(float CameraPitch)
 {
-	this->MC_ApplyVisualHandPosition(HandWorldTransform);
+	this->MC_ApplyCameraPitch(CameraPitch);
 }
 
-void APlanePlayerCharacter::MC_ApplyVisualHandPosition_Implementation(FTransform HandWorldTransform)
+void APlanePlayerCharacter::MC_ApplyCameraPitch_Implementation(float CameraPitch)
 {
-	if(IsLocallyControlled())//only for non controlled players
+	if(this->IsLocallyControlled())
 		return;
-
-	this->VisualNonLocalHandPTransform=HandWorldTransform;
+	
+	this->FirstPersonCamera->SetRelativeRotation(FRotator(CameraPitch,0,0));
 }
 
 FTransform APlanePlayerCharacter::GetHandWorldTransform()
 {
-	if(IsLocallyControlled())
-		return GetPlayerHand()->GetAttachComponent()->GetComponentTransform();
+	if(MyPlayerHand)
+		return MyPlayerHand->GetItemAttachComponent()->GetComponentTransform();
 	else
-		return VisualNonLocalHandPTransform;
+		return FTransform();
 }
 
 
