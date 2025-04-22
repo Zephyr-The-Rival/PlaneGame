@@ -261,6 +261,12 @@ void APlanePlayerCharacter::Server_HoldInteract_Start_Implementation(AInteractab
 	CurrentHoldInteractable->HoldInteract_Start(this);
 }
 
+void APlanePlayerCharacter::LetGoHoldInteract()
+{
+	if(HasAuthority())
+		this->Server_HoldInteract_End();
+}
+
 void APlanePlayerCharacter::Server_HoldInteract_End_Implementation()
 {
 	if(!CurrentHoldInteractable)
