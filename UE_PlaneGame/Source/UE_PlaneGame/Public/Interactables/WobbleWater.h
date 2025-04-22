@@ -5,12 +5,11 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Components/StaticMeshComponent.h"
-#include "Items/WorldItem.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "WobbleWater.generated.h"
 
 UCLASS()
-class UE_PLANEGAME_API AWobbleWater :AWorldItem
+class UE_PLANEGAME_API AWobbleWater : public AWorldItem
 {
 	GENERATED_BODY()
     
