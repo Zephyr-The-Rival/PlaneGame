@@ -159,7 +159,13 @@ private:
 	void Server_HoldInteract_Start(AInteractable* Interactable);
 	void Server_HoldInteract_Start_Implementation(AInteractable* Interactable);
 
+public:
 
+	//To use in blueprints to end interactions early
+	UFUNCTION(BlueprintCallable)
+	void LetGoHoldInteract();
+private:
+	
 	UFUNCTION(Server, Reliable)
 	void Server_HoldInteract_End();
 	void Server_HoldInteract_End_Implementation();
