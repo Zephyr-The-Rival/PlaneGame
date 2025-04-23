@@ -28,15 +28,27 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
 	                           FActorComponentTickFunction* ThisTickFunction) override;
-public:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+private:
+	//is set on begin play
 	ATurbulenceGenerator* MyTurbulenceGenerator;
-	
-	UFUNCTION(Blueprintable)
-	void ApplyTurbulence(float DeltaTime, const FVector& TurbulenceVector);
 
+public:
+	void ApplyTurbulence(float DeltaTime, const FVector& TurbulenceVector);
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bActive=true;
+
+private:
+	//add recieving components to this list if root isnt only recieving component
+	TArray<UPrimitiveComponent*> RecievingComponents =TArray<UPrimitiveComponent*>();
+public:
+
+	UFUNCTION(BlueprintCallable)
+	void AddRecievingComponent(UPrimitiveComponent* PrimitiveComponent);
+
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float StrengthMultiplier=1;
 
 protected:
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;

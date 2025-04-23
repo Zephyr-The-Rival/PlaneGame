@@ -18,6 +18,8 @@ UTurbulenceReciever::UTurbulenceReciever()
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
 
+
+
 	// ...
 }
 
@@ -53,23 +55,16 @@ void UTurbulenceReciever::ApplyTurbulence(float DeltaTime, const FVector& Turbul
 	//apply turbulence gets executed on all clients but the server still has authority over the positions of items
 	//however, before the netupdate comes, the items are moved on the client by the same noise value.
 	//the noise is predetermined and the driving value is replicated.
-
-	AActor* OwnerActor= GetOwner();
 	
-	if (APlanePlayerCharacter* PlayerCharacter = Cast<APlanePlayerCharacter>(OwnerActor))
+	for(UPrimitiveComponent* Component : RecievingComponents)
 	{
-		//PlayerCharacter->AddActorWorldOffset(TurbulenceValue*DeltaTime);
-		return;
+		Component->AddForce(TurbulenceVector * DeltaTime * 5000 *Component->GetMass()*this->StrengthMultiplier);
 	}
+}
 
-	
-	if (UPrimitiveComponent* PrimitiveComponent = Cast<UPrimitiveComponent>(OwnerActor->GetRootComponent()))
-	{
-		//PrimitiveComponent->AddForce(TurbulenceVector * DeltaTime * 100000);
-		//PrimitiveComponent->AddVelocityChangeImpulseAtLocation(TurbulenceVector*DeltaTime, PrimitiveComponent->GetComponentLocation()*1000);
-		//PrimitiveComponent->AddWorldOffset(TurbulenceVector*DeltaTime);
-		PrimitiveComponent->AddForce(TurbulenceVector * DeltaTime * 5000 *PrimitiveComponent->GetMass());
-	}
+void UTurbulenceReciever::AddRecievingComponent(UPrimitiveComponent* PrimitiveComponent)
+{
+	this->RecievingComponents.Add(PrimitiveComponent);
 }
 
 void UTurbulenceReciever::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

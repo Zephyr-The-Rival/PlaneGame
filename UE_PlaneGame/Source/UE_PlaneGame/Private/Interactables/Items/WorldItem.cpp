@@ -24,6 +24,12 @@ void AWorldItem::BeginPlay()
 	CheckUp();
 	OnPickedUp_Server.AddDynamic(this, &AWorldItem::MC_OnPickedUp);
 	OnDropped_Server.AddDynamic(this,&AWorldItem::MC_OnDropped);
+
+	UPrimitiveComponent* PrimitiveRootComponent=Cast<UPrimitiveComponent>(GetRootComponent());
+	if(PrimitiveRootComponent)
+	{
+		TurbulenceReciever->AddRecievingComponent(PrimitiveRootComponent);
+	}
 }
 
 // Called every frame
