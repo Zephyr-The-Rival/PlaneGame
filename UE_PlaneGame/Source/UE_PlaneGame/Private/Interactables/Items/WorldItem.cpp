@@ -4,6 +4,7 @@
 #include "Interactables/Items/WorldItem.h"
 
 #include "Debug.h"
+#include "PlayerCharacter/PlanePlayerCharacter.h"
 #include "UtilityActors/Turbulence/TurbulenceReciever.h"
 
 // Sets default values
@@ -12,6 +13,7 @@ AWorldItem::AWorldItem()
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	TurbulenceReciever=CreateDefaultSubobject<UTurbulenceReciever>(TEXT("Turbulence Reciever "));
+	this->bReplicates=true;
 }
 
 // Called when the game starts or when spawned
@@ -77,4 +79,11 @@ void AWorldItem::CheckUp()
 	}
 	
 }
+
+void AWorldItem::Interact_Implementation(APlanePlayerCharacter* InteractingPlayer)
+{
+	InteractingPlayer->PickUpItem(this);
+}
+
+
 

@@ -24,3 +24,18 @@ void AInteractable::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
+void AInteractable::Interact_Implementation(APlanePlayerCharacter* InteractingPlayer)
+{
+	//OverrideInChildClasses
+}
+
+void AInteractable::HoldInteract_Start_Implementation(APlanePlayerCharacter* InteractingPlayer)
+{
+	//OverrideInChildClasses
+}
+
+void AInteractable::HoldInteract_End_Implementation(APlanePlayerCharacter* InteractingPlayer)
+{
+	//OverrideInChildClasses
+}
+

@@ -35,4 +35,6 @@ public:
 	
 	UPROPERTY(BlueprintAssignable)
 	FGrabEvent OnLetGo;
+protected:
+	virtual void Interact_Implementation(APlanePlayerCharacter* InteractingPlayer) override;
 };

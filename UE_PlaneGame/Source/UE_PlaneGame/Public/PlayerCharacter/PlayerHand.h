@@ -36,6 +36,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	USphereComponent* HandCollision;
 
+public:
+	USceneComponent* GetItemAttachComponent();
+public:
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	APlanePlayerCharacter* MyOwningPlayer;
 
@@ -44,6 +48,8 @@ public:
 
 private:
 	UCameraComponent* OwningPlayerCamera;
-
 	void Tick_SetCollisionPosition();
+
+public:
+	USceneComponent* HandSocketToAttachTo;
 };

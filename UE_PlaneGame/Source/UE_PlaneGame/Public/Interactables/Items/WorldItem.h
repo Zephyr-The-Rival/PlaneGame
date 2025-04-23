@@ -47,4 +47,8 @@ private:
 
 private:
 	void CheckUp();
+
+protected:
+	
+	virtual void Interact_Implementation(APlanePlayerCharacter* InteractingPlayer) override;
 };
