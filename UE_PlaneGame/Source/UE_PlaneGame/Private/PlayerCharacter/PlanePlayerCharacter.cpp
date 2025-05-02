@@ -9,7 +9,6 @@
 #include "EnhancedInputComponent.h"
 #include "InputActionValue.h"
 #include "Debug.h"
-#include "IDetailTreeNode.h"
 #include "Interactables/GrabHandle.h"
 #include "Interactables/WorldButton.h"
 #include "Interactables/Items/Tool.h"
